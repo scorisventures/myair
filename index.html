@@ -659,7 +659,7 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
         <input type="password" id="wifi-pass" placeholder="Password" aria-label="Password">
         <button class="btn primary" type="submit">Save and restart</button>
       </form>
-      <p class="muted" style="margin-top:8px">The controller also runs its own network, <b>MyAir</b>, so this page still works if your router is off. Its password is in the landlord settings.</p>
+      <p class="muted" style="margin-top:8px">The controller also runs its own network, <b>MyAir</b>, so this page still works if your router is off. Its password is in the landlord settings. Once a landlord PIN is set, changing Wi-Fi, the data source or the software needs the landlord settings unlocked.</p>
     </div>
     <div id="set-phone">
       <h3>Phone access</h3>
@@ -1150,15 +1150,25 @@ $("open-settings").onclick = () => { $("settings").hidden = false; loadRemoteInf
 function closeSettings(){ $("settings").hidden = true; lockLandlord(); }
 $("close-settings").onclick = closeSettings;
 $("settings").onclick = e => { if (e.target === $("settings")) closeSettings(); };
+// Wi-Fi, data source and software updates need the landlord PIN once one is set.
+// null = not unlocked yet (and says so).
+function landlordPinFor(what){
+  if (!remoteInfo || !remoteInfo.pinSet || landlordPin) return landlordPin;
+  toast(`Unlock the landlord settings (under Phone access) first, then ${what}.`);
+  $("landlord").open = true;
+  return null;
+}
 $("source").onclick = async e => {
   const b = e.target.closest("button"); if (!b || b.getAttribute("aria-pressed") === "true") return;
   if (window.MYAIR_DEMO) return toast("Not available in practice mode.");
-  const r = await apiPost("/api/source",{source:b.dataset.v});
+  const pin = landlordPinFor("switch"); if (pin === null) return;
+  const r = await apiPost("/api/source",{source:b.dataset.v, pin});
   toast(r.ok ? "Switching. The controller is restarting; this page reconnects in about 30 seconds." : r.error);
 };
 $("wifi-form").onsubmit = async e => {
   e.preventDefault();
-  const r = await apiPost("/api/wifi",{ssid:$("wifi-ssid").value, pass:$("wifi-pass").value});
+  const pin = landlordPinFor("save"); if (pin === null) return;
+  const r = await apiPost("/api/wifi",{ssid:$("wifi-ssid").value, pass:$("wifi-pass").value, pin});
   toast(r.ok ? "Saved. The controller is restarting; this page reconnects in about 30 seconds." : r.error);
 };
 $("fw-form").onsubmit = async e => {
@@ -1166,9 +1176,10 @@ $("fw-form").onsubmit = async e => {
   const f = $("fw-file").files[0];
   if (!f) return toast("Choose the firmware.bin file first.");
   if (window.MYAIR_DEMO) return toast("Not available in practice mode.");
+  const pin = landlordPinFor("upload"); if (pin === null) return;
   toast("Uploading… keep this page open.");
   const fd = new FormData(); fd.append("firmware", f, f.name);
-  try { const r = await fetch("/api/update",{method:"POST",body:fd}); toast(await r.text()); }
+  try { const r = await fetch("/api/update?pin=" + encodeURIComponent(pin),{method:"POST",body:fd}); toast(await r.text()); }
   catch(err){ toast("Upload failed: "+err.message); }
 };
 
