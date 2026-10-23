@@ -170,12 +170,13 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
 /* scenes and schedules (called events inside) */
 .view-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
 .view-head h2{margin:0 0 2px;font-size:22px;text-wrap:balance}.view-head>div{min-width:0;max-width:60ch}
-.scene-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
-.scene{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.scene-name{font-size:19px;font-weight:650}.scene-sum{font-size:16px}.scene-zones{color:var(--muted);font-size:14px;flex:1}
-.scene-actions{display:flex;gap:8px;margin-top:10px}
-.scene .run{flex:1;height:50px;border-radius:12px;border:0;background:var(--accent);color:var(--panel);font-weight:650;font-size:17px}
-.scene .edit{height:50px;border-radius:12px;border:1.5px solid var(--line);background:var(--sunk);padding:0 18px;font-weight:600}
+/* Up to six scenes across; one row fits the wall tablet's screen without scrolling */
+.scene-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(max(170px,calc((100% - 60px) / 6)),1fr))}
+.scene{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.scene-name{font-size:17px;font-weight:650;overflow-wrap:anywhere}
+.scene-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.scene .run{grid-column:1/-1;height:46px;border-radius:12px;border:0;background:var(--accent);color:var(--panel);font-weight:650;font-size:17px}
+.scene .edit{height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--sunk);padding:0 8px;font-weight:600}
 .empty{border:1.5px dashed var(--line);border-radius:16px;padding:24px;color:var(--muted);text-align:center;grid-column:1/-1}
 .event-list{display:flex;flex-direction:column;gap:10px}
 .event{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(150px,230px) 1fr auto auto;gap:6px 18px;align-items:center}
@@ -186,10 +187,15 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
 .ev-card span{font-size:15px;font-weight:650;white-space:nowrap}
 .ev-card.mode{border-color:var(--m);color:var(--m)}.ev-card.mode b{color:inherit}
 .ev-card.zones{flex:1}
+/* MODE and FAN: square, the setting in the middle (mode, then temperature) */
+.ev-card.mode,.ev-card.fan{width:84px;aspect-ratio:1;flex:none;align-self:center}
+/* Edit above Copy, so the row stays as short as the cards */
+.ev-btns{display:flex;flex-direction:column;gap:6px}.ev-btns .btn{padding:6px 14px}
+.ev-val{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.2;min-width:0}
 .ev-zl{display:flex;flex-wrap:wrap;gap:4px}
 .ev-zl i{font-style:normal;font-size:12px;font-weight:600;padding:2px 8px;border-radius:9px;background:var(--panel);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
 .ev-zl i.on{background:var(--m);border-color:var(--m);color:var(--panel)}
-.scene .ev-cards{flex-wrap:wrap;margin-top:6px}.scene .ev-card.mode,.scene .ev-card.fan{flex:1}.scene .ev-card.zones{flex-basis:100%}
+.scene .ev-cards{flex-wrap:wrap;margin-top:6px}.scene .ev-card.mode,.scene .ev-card.fan{flex:1;width:auto;aspect-ratio:auto;align-self:stretch;padding:6px}.scene .ev-card.zones{flex-basis:100%}
 .scene-follows{color:var(--muted);font-size:14px;flex:1}
 .event.is-off .ev-time,.event.is-off .ev-name{color:var(--muted)}
 .ev-every{margin-top:6px;font-size:13px;font-weight:600;color:var(--accent)}.is-off .ev-every{color:var(--muted)}
@@ -312,6 +318,8 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
 .cam-alert-acts button{flex:1;min-height:42px;border-radius:10px;border:1.5px solid var(--line);background:var(--sunk);font-weight:600;font-size:13px;white-space:nowrap;padding:0 8px}
 .dim{position:fixed;inset:0;z-index:9;background:rgb(0 0 0 / .93);color:rgb(255 255 255 / .6);display:grid;place-content:center;text-align:center;gap:6px;cursor:pointer;animation:dim-in 2s}
 .dim.night{background:rgb(0 0 0 / .98);color:rgb(255 255 255 / .3)}
+/* The clock drifts a little every 30 s (dimDrift) so it doesn't burn into the screen */
+.dim-box{display:grid;gap:6px;transition:transform 4s ease-in-out}
 .dim-time{font-size:min(20vw,150px);font-weight:300;line-height:1}.dim-date{font-size:22px}.dim-note{font-size:14px;margin-top:18px;opacity:.7}
 @keyframes dim-in{from{opacity:0}}
 .viewer{position:fixed;inset:0;z-index:7;background:#000;display:flex;flex-direction:column}
@@ -468,7 +476,7 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
   <section id="view-scenes" class="zones-wrap" aria-label="Scenes" hidden>
     <div class="view-head">
       <div><h2>Scenes</h2><p class="muted">A scene sets the aircon, and the zones if you include them, in one tap.</p></div>
-      <button class="btn primary" id="new-scene">Save current settings as a scene</button>
+      <div class="head-btns"><button class="btn" id="save-as-scene" type="button">Save current settings</button><button class="btn primary" id="new-scene" type="button">New scene</button></div>
     </div>
     <div class="scene-grid" id="scene-list"></div>
   </section>
@@ -522,7 +530,8 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
   <form class="sheet" id="scene-form" role="dialog" aria-modal="true" aria-labelledby="scene-title" novalidate>
     <h2 id="scene-title">New scene</h2>
     <label class="field"><span class="field-label">Name</span><input type="text" id="sc-name" maxlength="32" autocomplete="off" placeholder="e.g. Evening"></label>
-    <div class="field"><span class="field-label">Aircon</span>
+    <div id="sc-settings" style="display:grid;gap:18px">
+    <div class="field" id="sc-on-field"><span class="field-label">Aircon</span>
       <div class="seg two" id="sc-on"><button type="button" data-v="1">On</button><button type="button" data-v="0">Off</button></div></div>
     <div id="sc-ac-fields" style="display:grid;gap:18px">
       <div class="field"><span class="field-label">Mode</span>
@@ -535,6 +544,7 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
     <label class="field"><span class="field-label">MyZone (the room the aircon follows)</span><select id="sc-myzone"></select></label>
     <label class="check"><input type="checkbox" id="sc-setzones"> Set the zones too</label>
     <div id="sc-zones"></div>
+    </div>
     <p class="form-error" id="sc-error" role="alert" hidden></p>
     <div class="sheet-actions">
       <button type="button" class="btn danger" id="sc-delete">Delete</button><span class="spacer"></span>
@@ -562,7 +572,7 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
       <div class="presets"><button type="button" class="link-btn" data-days="62">Weekdays</button><button type="button" class="link-btn" data-days="65">Weekend</button><button type="button" class="link-btn" data-days="127">Every day</button></div>
     </div>
     <label class="field" id="ev-action-field"><span class="field-label">At the start time</span><select id="ev-action"></select></label>
-    <p class="muted" id="ev-from-current" hidden></p>
+    <div id="ev-settings-slot" style="display:grid;gap:18px"></div>
     <label class="check"><input type="checkbox" id="ev-snd-on"> Sound when it turns the aircon on</label>
     <label class="check"><input type="checkbox" id="ev-snd-off"> Sound when it turns the aircon off</label>
     <label class="check"><input type="checkbox" id="ev-enabled"> Schedule is on</label>
@@ -602,7 +612,7 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
   <div class="cam-alert-acts"><button type="button" data-alert="pause10">Pause 10 min</button><button type="button" data-alert="pause30">Pause 30 min</button><button type="button" data-alert="mute">Mute 1 h</button><button type="button" data-alert="view">View</button><button type="button" data-alert="close" aria-label="Close">✕</button></div>
 </div>
 
-<div class="dim" id="dim" hidden><div class="dim-time digits" id="dim-time"></div><div class="dim-date" id="dim-date"></div><div class="dim-note">Tap to wake</div></div>
+<div class="dim" id="dim" hidden><div class="dim-box" id="dim-box"><div class="dim-time digits" id="dim-time"></div><div class="dim-date" id="dim-date"></div><div class="dim-note">Tap to wake</div></div></div>
 
 <div class="sheet-bg" id="day-sheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="day-title">
@@ -1017,7 +1027,7 @@ function render(){
   $("ro-banner").hidden = !live || !state.readOnly;
   if (!lost){
     if (!state.connected){ link.className = "chip bad"; link.textContent = "No control box"; }
-    else if (!live){ link.className = "chip warn"; link.textContent = "Practice data"; }
+    else if (!live){ link.className = "chip warn"; link.textContent = "Practice data" + (window.MYAIR_BUILD ? " · " + window.MYAIR_BUILD : ""); }
     else if (state.readOnly){ link.className = "chip ok"; link.textContent = "Live, read-only"; }
     else { link.className = "chip ok"; link.textContent = remote ? "Connected via internet" : "Connected"; }
   }
@@ -1430,22 +1440,11 @@ function fmtTime(min){
 }
 function sceneZone(sc, n){ return sc.zones.find(q => q.n === n) || {n, open:true, temp:null, percent:50}; }
 
-function sceneSummary(sc){
-  const zs = state ? state.zones : [];
-  const main = sc.on ? `${MODES[sc.mode]} ${fmt(sc.temp)}° · ${FANS[sc.fan]} fan` : "Aircon off";
-  let zones = "Zones stay as they are";
-  if (sc.setZones){
-    const open = zs.filter(z => z.constant || sceneZone(sc, z.n).open).map(z => z.name);
-    zones = open.length === zs.length ? "All zones on" : open.length ? "On: " + open.join(", ") : "All zones off";
-  }
-  const mz = sc.myZone && zs.find(z => z.n === sc.myZone);
-  return {main, zones: zones + (mz ? ` · follows ${mz.name}` : "")};
-}
-
 function eventWhat(ev){
   if (ev.action === "off") return "Turns the aircon off";
   const sc = plans.scenes.find(x => x.id === ev.scene);
-  const start = ev.action === "on" ? "Turns the aircon on" : "Runs " + (sc ? sc.name : "a deleted scene");
+  const start = ev.action === "on" ? "Turns the aircon on" : ev.action === "settings" ? "Sets the aircon" + (ev.settings.setZones ? " and zones" : "")
+    : "Runs " + (sc ? sc.name : "a deleted scene");
   return start + (ev.stop != null ? `, off at ${fmtTime(ev.stop)}` + (ev.stop < ev.minute ? " next day" : "") : "");
 }
 
@@ -1453,10 +1452,17 @@ function eventWhat(ev){
 // "turn on", which uses whatever was last set, so it shows "As left"). Off, or a
 // switched-off schedule, is dull.
 const MODE_VARS = {1:"cool",2:"heat",3:"fan",4:"auto",5:"dry",6:"auto"};
+// The settings a schedule sets (its own, or its scene's), or null for plain on / off.
+function eventSettings(ev){
+  return ev.action === "scene" ? plans.scenes.find(x => x.id === ev.scene) || null : ev.action === "settings" ? ev.settings : null;
+}
 function eventCards(ev){
-  const sc = ev.action === "scene" ? plans.scenes.find(x => x.id === ev.scene) : null;
+  const sc = eventSettings(ev);
   return planCards(sc, sc ? sc.on : ev.action === "on", ev.enabled);
 }
+// Each scene / schedule card takes its own mode's colour (Run, days, switch), not
+// the page's, which follows what the aircon is doing now.
+function modeAccent(sc){ return sc && sc.on ? ` style="--accent:var(--${MODE_VARS[sc.mode] || "cool"})"` : ""; }
 function planCards(sc, on, enabled){
   const m = !on || !enabled ? "var(--muted)" : sc ? `var(--${MODE_VARS[sc.mode] || "cool"})` : "var(--accent)";
   const zs = state ? state.zones : [];
@@ -1465,8 +1471,8 @@ function planCards(sc, on, enabled){
   else if (!sc && on) zones = `<span>As left</span>`;
   else zones = `<div class="ev-zl">${zs.map(z => `<i class="${on && (z.constant || sceneZone(sc, z.n).open) ? "on" : ""}">${esc(z.name)}</i>`).join("")}</div>`;
   return `<div class="ev-cards" style="--m:${m}">
-      <div class="ev-card mode"><b>MODE</b><span>${!on ? "Off" : sc ? MODES[sc.mode] + " " + fmt(sc.temp) + "°" : "As left"}</span></div>
-      <div class="ev-card fan"><b>FAN</b><span>${!on ? "Off" : sc ? FANS[sc.fan] : "As left"}</span></div>
+      <div class="ev-card mode"><b>MODE</b><div class="ev-val"><span>${!on ? "Off" : sc ? MODES[sc.mode] : "As left"}</span>${on && sc ? `<span>${fmt(sc.temp)}°</span>` : ""}</div></div>
+      <div class="ev-card fan"><b>FAN</b><div class="ev-val"><span>${!on ? "Off" : sc ? FANS[sc.fan] : "As left"}</span></div></div>
       <div class="ev-card zones"><b>ZONES</b>${zones}</div></div>`;
 }
 
@@ -1474,22 +1480,22 @@ function renderPlans(){
   if (!plans) return;
   $("scene-list").innerHTML = plans.scenes.length ? plans.scenes.map(sc => {
     const mz = sc.myZone && state && state.zones.find(z => z.n === sc.myZone);
-    return `<article class="scene"><div class="scene-name">${esc(sc.name)}</div>${planCards(sc, sc.on, true)}
+    return `<article class="scene"${modeAccent(sc)}><div class="scene-name">${esc(sc.name)}</div>${planCards(sc, sc.on, true)}
       <div class="scene-follows">${mz ? "Follows " + esc(mz.name) : ""}</div>
-      <div class="scene-actions"><button class="run" data-run="${sc.id}">Run</button><button class="edit" data-edit="${sc.id}">Edit</button></div></article>`;
-  }).join("") : `<div class="empty">No scenes yet. Set the aircon and zones the way you like them on the Control page, then tap <b>Save current settings as a scene</b>.</div>`;
+      <div class="scene-actions"><button class="run" data-run="${sc.id}">Run</button><button class="edit" data-edit="${sc.id}">Edit</button><button class="edit" data-copy="${sc.id}">Copy</button></div></article>`;
+  }).join("") : `<div class="empty">No scenes yet. Tap <b>New scene</b>, or set the aircon and zones the way you like them on the Control page and tap <b>Save current settings</b>.</div>`;
 
   const evs = plans.events.slice().sort((a,b) => a.minute - b.minute);
   $("event-list").innerHTML = evs.length ? evs.map(ev => `
-    <article class="event ${ev.enabled ? "" : "is-off"}">
+    <article class="event ${ev.enabled ? "" : "is-off"}"${modeAccent(eventSettings(ev))}>
       <div class="ev-time digits">${fmtTime(ev.minute)}${ev.stop != null && ev.action !== "off" ? `<small>to ${fmtTime(ev.stop)}</small>` : ""}</div>
       <div style="min-width:0"><div class="ev-name">${esc(ev.name)}</div><div class="ev-what">${esc(eventWhat(ev))}${ev.enabled ? "" : " · off"}</div>
         ${ev.every === 2 ? `<div class="ev-every">Every 2 weeks from ${dayText(ev.from, {weekday:"long", day:"numeric", month:"short"})}</div>`
           : `<div class="days" aria-label="Days">${DAY_ORDER.map((d,i) => `<span class="${ev.days >> d & 1 ? "on" : ""}">${DAY_LETTERS[i]}</span>`).join("")}</div>`}</div>
       <button class="switch" role="switch" aria-checked="${ev.enabled}" aria-label="${esc(ev.name)} on or off" data-toggle="${ev.id}"></button>
-      <button class="btn" data-edit-ev="${ev.id}">Edit</button>
+      <div class="ev-btns"><button class="btn" data-edit-ev="${ev.id}">Edit</button><button class="btn" data-copy-ev="${ev.id}">Copy</button></div>
       ${eventCards(ev)}
-    </article>`).join("") : `<div class="empty">No schedules yet. Tap <b>New schedule</b> to run a scene, or turn the aircon on or off, at a set time.</div>`;
+    </article>`).join("") : `<div class="empty">No schedules yet. Tap <b>New schedule</b> to set the aircon and zones, run a scene, or turn the aircon off, at a set time.</div>`;
 
   $("clock-note").textContent = plans.clockSet
     ? `Controller clock: ${plans.now}. Each schedule runs once at its time on the days you pick.`
@@ -1498,8 +1504,9 @@ function renderPlans(){
 }
 
 $("scene-list").onclick = async e => {
-  const run = e.target.closest("[data-run]"), edit = e.target.closest("[data-edit]");
-  if (edit) return openScene(plans.scenes.find(x => x.id === +edit.dataset.edit));
+  const run = e.target.closest("[data-run]"), edit = e.target.closest("[data-edit]"), copy = e.target.closest("[data-copy]");
+  if (edit) return openScene(plans.scenes.find(x => x.id === +edit.dataset.edit), "edit");
+  if (copy) return openScene(copyOf(plans.scenes.find(x => x.id === +copy.dataset.copy), plans.scenes), "copy");
   if (!run) return;
   const sc = plans.scenes.find(x => x.id === +run.dataset.run);
   const r = await apiPost("/api/scene/run",{id: sc.id});
@@ -1507,8 +1514,9 @@ $("scene-list").onclick = async e => {
   setTimeout(refresh, 900);
 };
 $("event-list").onclick = async e => {
-  const tg = e.target.closest("[data-toggle]"), edit = e.target.closest("[data-edit-ev]");
-  if (edit) return openEvent(plans.events.find(x => x.id === +edit.dataset.editEv));
+  const tg = e.target.closest("[data-toggle]"), edit = e.target.closest("[data-edit-ev]"), copy = e.target.closest("[data-copy-ev]");
+  if (edit) return openEvent(plans.events.find(x => x.id === +edit.dataset.editEv), "edit");
+  if (copy) return openEvent(copyOf(plans.events.find(x => x.id === +copy.dataset.copyEv), plans.events), "copy");
   if (!tg) return;
   const on = tg.getAttribute("aria-checked") !== "true";
   tg.setAttribute("aria-checked", on);
@@ -1534,22 +1542,48 @@ function currentSceneDraft(){
     zones: state.zones.map(z => ({n:z.n, open:held("z"+z.n+"open",z.open), temp: hasTemp(z) ? held("z"+z.n+"temp",z.setTemp) : null,
                                   percent: z.sensor ? 50 : held("z"+z.n+"pct",z.percent)}))};
 }
-function openScene(sc){
-  if (!state) return toast("Waiting for the controller.");
-  const ac = state.ac;
-  draft = sc ? JSON.parse(JSON.stringify(sc)) : currentSceneDraft();
+// "New scene": a plain starting point, not what the Control page shows.
+function blankSceneDraft(){
+  const t = clampT(24);
+  return {id:0, name:"", on:true, mode:1, fan:2, temp:t, myZone:0, setZones:true,
+    zones: state.zones.map(z => ({n:z.n, open:true, temp: hasTemp(z) ? t : null, percent: z.sensor ? 50 : Math.min(z.max, Math.max(5, z.min, 50))}))};
+}
+// An unsaved copy of a scene or schedule, named "… copy" (then "… copy 2" …), for
+// the editor; it's only kept if the user saves it.
+function copyOf(item, list){
+  const names = new Set(list.map(x => x.name)), base = item.name.slice(0, 27) + " copy";
+  let name = base;
+  for (let i = 2; names.has(name); i++) name = base.slice(0, 31 - String(i).length) + " " + i;
+  return {...JSON.parse(JSON.stringify(item)), id:0, name};
+}
+// Every zone gets an entry, and sensor zones a temperature, so the editor can show them.
+function fillZones(d){
   for (const z of state.zones){
-    const q = sceneZone(draft, z.n);
-    if (!draft.zones.includes(q)) draft.zones.push(q);
-    if (hasTemp(z) && q.temp == null) q.temp = draft.temp;
+    const q = sceneZone(d, z.n);
+    if (!d.zones.includes(q)) d.zones.push(q);
+    if (hasTemp(z) && q.temp == null) q.temp = d.temp;
   }
-  $("scene-title").textContent = sc ? "Edit scene" : "New scene";
+  return d;
+}
+// The aircon and zone fields live in the scene sheet; a schedule that sets its
+// own borrows them (draft is then the schedule's settings).
+function placeSettings(inSchedule){
+  if (inSchedule) $("ev-settings-slot").append($("sc-settings"));
+  else $("scene-form").insertBefore($("sc-settings"), $("sc-error"));
+  $("sc-on-field").hidden = inSchedule;  // a schedule turns the aircon off with "Turn the aircon off"
+}
+// how: "edit" or "copy" (sc given), "new" (blank) or "current" (the Control page's settings).
+function openScene(sc, how){
+  if (!state) return toast("Waiting for the controller.");
+  draft = fillZones(sc ? JSON.parse(JSON.stringify(sc)) : how === "new" ? blankSceneDraft() : currentSceneDraft());
+  placeSettings(false);
+  $("scene-title").textContent = how === "edit" ? "Edit scene" : how === "copy" ? "Copy of scene" : "New scene";
   $("sc-name").value = draft.name;
-  $("sc-delete").hidden = !sc; armDelete($("sc-delete"), false);
+  $("sc-delete").hidden = how !== "edit"; armDelete($("sc-delete"), false);
   sheetError("sc-error");
   renderSceneSheet();
   $("scene-sheet").hidden = false;
-  if (!sc) $("sc-name").focus();
+  if (how !== "edit") $("sc-name").focus();
 }
 function renderSceneSheet(){
   const d = draft;
@@ -1602,50 +1636,52 @@ $("sc-delete").onclick = async () => {
 };
 $("sc-cancel").onclick = () => closeSheet("scene-sheet");
 $("scene-sheet").onclick = e => { if (e.target === $("scene-sheet")) closeSheet("scene-sheet"); };
-$("new-scene").onclick = () => openScene(null);
+$("new-scene").onclick = () => openScene(null, "new");
+$("save-as-scene").onclick = () => openScene(null, "current");
 
 // --- event editor
-let evDraft = null, evFromCurrent = false;
-// fromCurrent: saving the Control page's settings; makes a scene with the same
-// name and an event that runs it.
-function openEvent(ev, fromCurrent){
+let evDraft = null;
+// how: "edit" or "copy" (ev given), or "current". A new schedule starts as "set the
+// aircon and zones" with what the Control page shows now.
+function openEvent(ev, how){
   if (!plans) return;
-  evFromCurrent = !!fromCurrent;
+  if (!state) return toast("Waiting for the controller.");
   evDraft = ev ? {...ev} : {id:0, name:"", enabled:true, days:62, minute:18*60, stop:22*60,
-    action: plans.scenes.length ? "scene" : "on", scene: plans.scenes.length ? plans.scenes[0].id : 0, every:1, from:0, soundOn:false, soundOff:false};
+    action:"settings", scene: plans.scenes.length ? plans.scenes[0].id : 0, every:1, from:0, soundOn:false, soundOff:false};
   if (evDraft.every !== 2) evDraft.every = 1;
-  $("event-title").textContent = evFromCurrent ? "Save current settings as a schedule" : ev ? "Edit schedule" : "New schedule";
+  draft = fillZones(evDraft.settings ? JSON.parse(JSON.stringify(evDraft.settings)) : currentSceneDraft());
+  draft.on = true;
+  placeSettings(true);
+  renderSceneSheet();
+  $("event-title").textContent = how === "current" ? "Save current settings as a schedule" : how === "edit" ? "Edit schedule"
+    : how === "copy" ? "Copy of schedule" : "New schedule";
   $("ev-name").value = evDraft.name;
   $("ev-time").value = hhmm(evDraft.minute);
   $("ev-has-stop").checked = evDraft.stop != null;
   $("ev-stop").value = hhmm(evDraft.stop != null ? evDraft.stop : (evDraft.minute + 180) % 1440);
-  $("ev-action").innerHTML = plans.scenes.map(sc => `<option value="scene:${sc.id}">Run scene: ${esc(sc.name)}</option>`).join("") +
-    `<option value="on">Turn the aircon on</option><option value="off">Turn the aircon off</option>`;
+  $("ev-action").innerHTML = `<option value="settings">Set the aircon and zones</option>` +
+    plans.scenes.map(sc => `<option value="scene:${sc.id}">Run scene: ${esc(sc.name)}</option>`).join("") +
+    `<option value="on">Turn the aircon on (as it was left)</option><option value="off">Turn the aircon off</option>`;
   $("ev-action").value = evDraft.action === "scene" ? "scene:" + evDraft.scene : evDraft.action;
-  $("ev-action-field").hidden = evFromCurrent;
-  $("ev-from-current").hidden = !evFromCurrent;
-  if (evFromCurrent){
-    const t = sceneSummary(currentSceneDraft());
-    $("ev-from-current").textContent = `At the start time it sets: ${t.main}. ${t.zones}. This is saved as a scene with the same name.`;
-    $("ev-action").value = "on";  // so the stop time shows
-  }
   $("ev-enabled").checked = evDraft.enabled;
   $("ev-snd-on").checked = !!evDraft.soundOn; $("ev-snd-off").checked = !!evDraft.soundOff;
   $("ev-from").value = isoOf(evDraft.from || todayYmd());
   renderEvery();
-  $("ev-delete").hidden = !ev; armDelete($("ev-delete"), false);
+  $("ev-delete").hidden = how !== "edit"; armDelete($("ev-delete"), false);
   sheetError("ev-error");
   renderDays(); renderStop();
   $("event-sheet").hidden = false;
-  if (!ev) $("ev-name").focus();
+  if (how !== "edit") $("ev-name").focus();
 }
 function hhmm(min){ return String(Math.floor(min/60)).padStart(2,"0") + ":" + String(min%60).padStart(2,"0"); }
 function toMin(v){ return /^\d\d:\d\d/.test(v) ? +v.slice(0,2)*60 + +v.slice(3,5) : null; }
-// No stop time when the event itself turns the aircon off.
+// No stop time when the event itself turns the aircon off; the aircon and zone
+// fields only for "set the aircon and zones".
 function renderStop(){
   const off = $("ev-action").value === "off";
   $("ev-stop-check").hidden = off;
   $("ev-stop-field").hidden = off || !$("ev-has-stop").checked;
+  $("ev-settings-slot").hidden = $("ev-action").value !== "settings";
 }
 $("ev-action").onchange = renderStop;
 $("ev-has-stop").onchange = renderStop;
@@ -1675,23 +1711,10 @@ $("event-form").onsubmit = async e => {
     name: $("ev-name").value.trim(), enabled: $("ev-enabled").checked,
     minute: start, stop: wantStop ? stop : null,
     action: act.startsWith("scene:") ? "scene" : act, scene: act.startsWith("scene:") ? +act.slice(6) : 0});
-  let newScene = 0;
-  if (evFromCurrent){
-    // Check the event first so we don't leave a stray scene behind.
-    if (!evDraft.name) return sheetError("ev-error", "Give it a name.");
-    if (!evDraft.days) return sheetError("ev-error", "Pick at least one day.");
-    if (evDraft.stop != null && evDraft.stop === evDraft.minute) return sheetError("ev-error", "The stop time can't be the same as the start time.");
-    const sc = currentSceneDraft(); sc.name = evDraft.name;
-    const rs = await apiPostJson("/api/scene", sc);
-    if (!rs.ok) return sheetError("ev-error", rs.error);
-    newScene = rs.id;
-    Object.assign(evDraft, {action:"scene", scene:rs.id});
-  }
+  if (act === "settings"){ const {id, name, ...settings} = draft; evDraft.settings = settings; }
+  else delete evDraft.settings;
   const r = await apiPostJson("/api/event", evDraft);
-  if (!r.ok){
-    if (newScene) await apiPost("/api/scene/delete",{id:newScene});
-    return sheetError("ev-error", r.error);
-  }
+  if (!r.ok) return sheetError("ev-error", r.error);
   closeSheet("event-sheet"); toast(`Saved ${evDraft.name}.`); loadPlans();
 };
 $("ev-delete").onclick = async () => {
@@ -1708,7 +1731,7 @@ $("save-as-event").onclick = async () => {
   if (!state) return toast("Waiting for the controller.");
   if (!plans) await loadPlans();
   if (!plans) return toast("Can't load schedules from the controller. Try again.");
-  openEvent(null, true);
+  openEvent(null, "current");
 };
 
 // ------------------------------------------------------------ tasks page (wall panel only)
@@ -2217,7 +2240,19 @@ function wakeScreen(hold){
   try { if (window.fully && fully.turnScreenOn) fully.turnScreenOn(); } catch(e){}  // Fully Kiosk (paid version)
   $("dim").hidden = true;
 }
+// Every 30 s the clock glides 10-20 px in a random direction, staying within
+// 40 px (across) and 30 px (up/down) of the middle, so no pixel stays lit for long.
+const drift = {x: 0, y: 0, at: 0};
+function dimDrift(){
+  if (Date.now() - drift.at < 30000) return;
+  drift.at = Date.now();
+  const a = Math.random() * 2 * Math.PI, step = 10 + Math.random() * 10;
+  drift.x = Math.max(-40, Math.min(40, drift.x + Math.cos(a) * step));
+  drift.y = Math.max(-30, Math.min(30, drift.y + Math.sin(a) * step));
+  $("dim-box").style.transform = `translate(${drift.x.toFixed(1)}px,${drift.y.toFixed(1)}px)`;
+}
 function renderDim(){
+  dimDrift();
   const d = new Date();
   $("dim-time").textContent = d.toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"});
   $("dim-date").textContent = d.toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
@@ -2843,17 +2878,29 @@ const demo = (() => {
       room: {label: r.label, fresh: true, battery: r.battery, lowBattery: low, ageS: 3}};
   };
 
-  // The old tablet's two morning schedules, each as a scene plus one event
-  // (same starter set the board loads on first start).
+  // The owner's own practice setup (scenes set up on the PC, 2026-10-23), and the
+  // old tablet's two morning schedules with their settings. The PC tests
+  // (MYAIR_TEST) use the board's starter set instead: those two as scenes + events.
   const zl = (open, temps, pctBath) => s.zones.map((z,i) => ({n:z.n, open:open.includes(z.n),
     temp: z.sensor ? temps[i] : null, percent: z.n === 7 ? pctBath : 50}));
-  const plans = {
+  const scene = (id, name, mode, temp, open) =>
+    ({id, name, on:true, mode, fan:1, temp, myZone:2, setZones:true, zones:zl(open, s.zones.map(() => temp), 100)});
+  const morning = (mode, temp, open, temps) => ({on:true, mode, fan:1, temp, myZone:2, setZones:true, zones:zl(open, temps, 100)});
+  const plans = window.MYAIR_TEST ? {
     scenes:[
       {id:1,name:"Morn M-F",on:true,mode:2,fan:1,temp:21,myZone:2,setZones:true,zones:zl([1,2,4,7],[22,21,0,21,0,21,0],100)},
       {id:2,name:"Weekend Morn",on:true,mode:2,fan:1,temp:22,myZone:2,setZones:true,zones:zl([2,4],[22,22,0,22,0,22,0],100)}],
     events:[
       {id:1,name:"Morn M-F",enabled:true,days:62,minute:360,stop:585,action:"scene",scene:1},
       {id:2,name:"Weekend Morn",enabled:true,days:65,minute:450,stop:600,action:"scene",scene:2}],
+    activity:[]} : {
+    scenes:[
+      scene(1, "TV & GAMES HEAT", 2, 24, [1,2,5]), scene(2, "TV & GAMES COOL", 1, 17, [1,2,5]),
+      scene(3, "GAMES HEAT NS", 2, 23, [2,5]),     scene(4, "GAMES COOL NS", 1, 17, [2,5]),
+      scene(5, "TV & BED HEAT", 2, 24, [1,2,4]),   scene(6, "TV & BED COOL", 1, 17, [1,2,4])],
+    events:[
+      {id:1,name:"Morn M-F",enabled:true,days:62,minute:360,stop:585,action:"settings",settings:morning(2,21,[1,2,4,7],[22,21,0,21,0,21,0])},
+      {id:2,name:"Weekend Morn",enabled:true,days:65,minute:450,stop:600,action:"settings",settings:morning(2,22,[2,4],[22,22,0,22,0,22,0])}],
     activity:[]};
   const stamp = () => new Date().toLocaleString("en-AU",{weekday:"short",hour:"2-digit",minute:"2-digit",hour12:false}).replace(",","");
   const note = t => { plans.activity.unshift(stamp()+"  "+t); plans.activity.length = Math.min(plans.activity.length, 20); };
@@ -2893,7 +2940,7 @@ const demo = (() => {
     lastKey = key;
     const minute = d.getHours()*60 + d.getMinutes(), today = nowParts()[0];
     for (const ev of plans.events){
-      const sc = ev.action === "scene" ? plans.scenes.find(x => x.id === ev.scene) : null;
+      const sc = ev.action === "scene" ? plans.scenes.find(x => x.id === ev.scene) : ev.action === "settings" ? {...ev.settings, name: ev.name} : null;
       if (ev.enabled && ev.stop === minute && startsOn(ev, ev.stop > ev.minute ? today : addDays(today, -1))){
         later(() => { s.ac.on = false; });
         note(ev.name + ": stop time, turned the aircon off");
@@ -2902,7 +2949,7 @@ const demo = (() => {
       if (!ev.enabled || ev.minute !== minute || !startsOn(ev, today)) continue;
       let r, what;
       const on = sc ? sc.on : ev.action === "on";
-      if (sc){ what = "ran scene " + sc.name; r = applyScene(sc); }
+      if (sc){ what = ev.action === "settings" ? "set the aircon and zones" : "ran scene " + sc.name; r = applyScene(sc); }
       else { what = "turned the aircon " + ev.action; r = later(() => { s.ac.on = on; }); }
       note(ev.name + ": " + (r.ok ? what : "didn't run. " + r.error));
       if (r.ok && (on ? ev.soundOn : ev.soundOff)) chime(on, ev.name + (on ? ": aircon on" : ": aircon off"));
@@ -2922,6 +2969,7 @@ const demo = (() => {
       if (!isScene && !p.days) return no("Pick at least one day.");
       if (!isScene && p.stop != null && p.stop === p.minute) return no("The stop time can't be the same as the start time.");
       if (!isScene && p.action === "scene" && !plans.scenes.some(x => x.id === p.scene)) return no("Pick which scene to run.");
+      if (!isScene && p.action === "settings" && !p.settings) return no("Pick what should happen.");
       const item = JSON.parse(JSON.stringify(p));
       if (!item.id){ item.id = nextId(list); list.push(item); }
       else { const i = list.findIndex(x => x.id === item.id); if (i < 0) return no("That no longer exists."); list[i] = item; }
