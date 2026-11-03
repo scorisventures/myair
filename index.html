@@ -785,6 +785,10 @@ const MODES = {1:"Cool",2:"Heat",3:"Fan only",4:"Auto",5:"Dry",6:"MyAuto"};
 const FANS = {0:"Off",1:"Low",2:"Medium",3:"High",4:"Auto",5:"MyFan"};
 const ARC_LEN = 424;  // length of the dial's arc path (270 degrees of r=90)
 let state = null, failures = 0;
+// Replies can arrive out of order on a slow link (the board's Wi-Fi shares the
+// radio with Bluetooth). Show only the newest, and none asked for before the
+// latest change got through, or the old value flashes back (2026-11-04).
+let askedN = 0, shownN = 0, staleUpTo = 0;
 const pending = {};   // key -> {v, until}: values the user just set, shown until the box confirms
 
 // ------------------------------------------------------------ phone copy: talking through ntfy.sh
@@ -916,8 +920,13 @@ async function apiPost(path, params){
 }
 
 async function refresh(){
-  const first = !state;
-  try { state = await apiGet(); failures = 0; syncClock(); }
+  const n = ++askedN;
+  let first = false;
+  try {
+    const s = await apiGet();
+    failures = 0;
+    if (n > shownN && n > staleUpTo){ first = !state; shownN = n; state = s; syncClock(); }
+  }
   catch(e){ failures++; }
   if (first && state && plans) renderPlans();
   render();
@@ -935,6 +944,7 @@ async function send(path, params, key, v){
   if (key) hold(key, v);
   render();
   const r = await apiPost(path, params);
+  staleUpTo = askedN;
   if (!r.ok){ if (key) delete pending[key]; toast(r.error); }
   setTimeout(refresh, 900);
 }
