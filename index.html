@@ -762,11 +762,12 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
     </div>
     <div id="set-source">
       <h3>Data source</h3>
-      <div class="seg two" id="source">
+      <div class="seg three" id="source">
         <button type="button" data-v="practice">Practice data</button>
         <button type="button" data-v="cable">Control box (read-only)</button>
+        <button type="button" data-v="control">Control box (in charge)</button>
       </div>
-      <p class="muted" style="margin-top:8px">Read-only shows live readings from the cable without changing anything. Switch to it after the listen-only test works. The controller restarts when you switch.</p>
+      <p class="muted" style="margin-top:8px">Read-only shows live readings from the cable without changing anything; the old tablet stays in charge. In charge replaces the old tablet: unplug the old tablet from the cable first (two tablets can't share it; if the controller hears another one it stops sending). The controller restarts when you switch.</p>
     </div>
     <div id="set-update">
       <h3>Update the controller's software</h3>
@@ -1025,13 +1026,16 @@ function render(){
   if (!state) return;
   const live = state.source === "cable";
   $("ro-banner").hidden = !live || !state.readOnly;
+  $("ro-banner").textContent = state.sendBlocked || "Read-only: these are live readings from your control box. The old tablet is still in charge, so make changes on the old tablet.";
   if (!lost){
     if (!state.connected){ link.className = "chip bad"; link.textContent = "No control box"; }
     else if (!live){ link.className = "chip warn"; link.textContent = "Practice data" + (window.MYAIR_BUILD ? " · " + window.MYAIR_BUILD : ""); }
+    else if (state.sendBlocked){ link.className = "chip bad"; link.textContent = "Another tablet on the cable"; }
     else if (state.readOnly){ link.className = "chip ok"; link.textContent = "Live, read-only"; }
     else { link.className = "chip ok"; link.textContent = remote ? "Connected via internet" : "Connected"; }
   }
-  for (const b of $("source").children) b.setAttribute("aria-pressed", b.dataset.v === (live ? "cable" : "practice"));
+  const inCharge = !!(state.info && state.info.cable && state.info.cable.inCharge);
+  for (const b of $("source").children) b.setAttribute("aria-pressed", b.dataset.v === (!live ? "practice" : inCharge ? "control" : "cable"));
   applyFeatures();
 
   const ac = state.ac, lim = state.limits;
@@ -1090,8 +1094,9 @@ function render(){
 
   const i = state.info || {};
   $("about").innerHTML = [
-    ["Data", live ? (state.readOnly ? "Control box (live, read-only)" : "Control box (live)") : "Practice data (simulated)"],
+    ["Data", live ? (inCharge ? "Control box (live, in charge)" : "Control box (live, read-only)") : "Practice data (simulated)"],
     ...(i.cable ? [["Cable messages", `${i.cable.frames} heard, ${i.cable.crcErrors} damaged, style: ${i.cable.style}`]] : []),
+    ...(i.cable && i.cable.inCharge ? [["Changes sent", `${i.cable.commands}, ${i.cable.refused} not done${i.cable.problem ? " (latest: " + esc(i.cable.problem) + ")" : ""}`]] : []),
     ["Clock chip", i.clockChip === false ? "Not answering" : i.clockChip ? "Working" : "–"],
     ["Home Wi-Fi", i.homeWifi ? `${i.ip} (signal ${i.rssi} dBm)` : "Not connected"],
     ["Own network", `MyAir, ${i.apIp||"192.168.4.1"}`],
@@ -2864,7 +2869,7 @@ const demo = (() => {
       const z = r.zone && zoneN(r.zone);
       if (!z || !z.open || Date.now() - r.sent < 6000) continue;
       let err = z.temp - r.set; if (ac.mode === 2) err = -err;
-      const lo = Math.max(5, z.min), want = Math.max(lo, Math.min(z.max, Math.round((50 + err*40)/5)*5));
+      const lo = Math.max(5, z.min), want = Math.max(lo, Math.min(z.max, Math.round((50 + err*100)/5)*5));
       if (want === z.percent || (Math.abs(want - z.percent) < 10 && want !== lo && want !== z.max)) continue;
       r.sent = Date.now(); z.percent = want;
     }
