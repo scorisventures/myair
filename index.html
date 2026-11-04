@@ -124,7 +124,8 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
 .zone-bottom{display:flex;align-items:center;gap:8px}
 .toggle{flex:1;height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--sunk);font-weight:600;font-size:15px}
 .toggle[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--panel)}
-.toggle:disabled{cursor:default;opacity:.75}
+.toggle.ready{border-color:var(--accent)}
+.toggle:disabled{cursor:default}
 .mini{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:12px;height:69px}
 .mini button{width:48px;height:100%;border:0;background:transparent;font-size:32px}
 .mini span{min-width:70px;text-align:center;font-size:24px;font-weight:600}
@@ -1080,11 +1081,16 @@ function render(){
     star.hidden = !z.sensor;
     star.setAttribute("aria-pressed", myZone === z.n);
     el.querySelector(".zone-temp").innerHTML = z.temp == null ? "–" : fmt(z.temp)+"<small>°</small>";
-    el.querySelector(".flow-text").textContent = open ? `${z.percent}% air` : "Off";
-    el.querySelector(".bar i").style.width = (open ? z.percent : 0) + "%";
+    // With the system off nothing blows: the zones that will come on with the
+    // power show as grey "Off" buttons with an outline in the mode colour.
+    const lit = open && on;
+    el.querySelector(".flow-text").textContent = lit ? `${z.percent}% air` : "Off";
+    el.querySelector(".bar i").style.width = (lit ? z.percent : 0) + "%";
     const tg = el.querySelector(".toggle");
-    tg.setAttribute("aria-pressed", open);
-    tg.textContent = z.constant ? "Always on" : open ? "On" : "Off";
+    tg.setAttribute("aria-pressed", lit);
+    tg.classList.toggle("ready", open && !on);
+    tg.title = open && !on ? "Comes on with the power" : "";
+    tg.textContent = z.constant ? "Always on" : lit ? "On" : "Off";
     tg.disabled = z.constant;
     el.querySelector(".val").textContent = tempCtl(z) ? fmt(held("z"+z.n+"temp", z.setTemp))+"°" : held("z"+z.n+"pct", z.percent)+"%";
     el.querySelector(".mini").title = tempCtl(z) ? "Zone set temperature" : "Airflow";
