@@ -1090,7 +1090,7 @@ function render(){
     tg.setAttribute("aria-pressed", lit);
     tg.classList.toggle("ready", open && !on);
     tg.title = open && !on ? "Comes on with the power" : "";
-    tg.textContent = z.constant ? "Always on" : lit ? "On" : "Off";
+    tg.textContent = !lit ? "Off" : z.constant ? "Always on" : "On";
     tg.disabled = z.constant;
     el.querySelector(".val").textContent = tempCtl(z) ? fmt(held("z"+z.n+"temp", z.setTemp))+"°" : held("z"+z.n+"pct", z.percent)+"%";
     el.querySelector(".mini").title = tempCtl(z) ? "Zone set temperature" : "Airflow";
