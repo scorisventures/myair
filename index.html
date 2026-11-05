@@ -2244,6 +2244,7 @@ function renderMessages(){
   if (!state) return;
   const t = state.tasks, list = t ? t.messages : [];
   const items = [...sensorMessages().map(sensorMsgHtml), ...list.map(msgHtml)];
+  if (remote) $("messages").hidden = !features().tasks || !items.length;  // phones: only when something is due
   $("messages").classList.toggle("alert", alerting && list.length > 0);
   $("msg-body").classList.toggle("has", items.length > 0);
   const html = items.length ? items.join("")
