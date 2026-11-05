@@ -385,6 +385,41 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
 @container (max-height:250px){.notes{display:none}.zone-temp{font-size:36px}}
 @container (max-height:215px){.flow-text{display:none}.zone-temp{font-size:32px}.toggle{height:40px}.mini{height:57px}}
 @media (max-width:420px){.dial .set{font-size:58px}.zones{grid-template-columns:1fr}}
+/* Phone copy (body.phone): no title, clock, badge or gear; the tabs share the width; the
+   System card's label says whether the phone reaches the aircon; Tasks opens as its own page
+   with a Back link. Upright or narrow, the zone cards are compact (name, airflow and star on
+   one line; room temperature, button and set temperature on the next), so every zone fits on
+   one screen, with the Messages card under them. */
+body.phone header h1,body.phone #clock,body.phone #link,body.phone #open-settings,body.phone header .spacer{display:none}
+body.phone .tabs{flex:1}
+body.phone .tabs button{flex:1;padding:9px 4px}
+body.phone[data-view="tasks"] header{display:none}
+.unit-top .label.ok{color:var(--ok);font-weight:600}.unit-top .label.bad{color:var(--bad);font-weight:600}
+.back{align-self:flex-start;border:0;background:none;color:var(--accent);font-weight:650;font-size:16px;padding:4px 0}
+@media (max-width:859px),(orientation:portrait){
+  body.phone .unit-top>div:first-child{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;column-gap:10px}
+  body.phone .unit-top .label{flex-basis:100%}
+  body.phone .timer-left{margin-top:0}
+  body.phone .zones-head{display:none}
+  body.phone .zones{grid-template-columns:1fr;gap:8px}
+  body.phone .zone:not(.messages){flex-direction:row;flex-wrap:wrap;align-items:center;gap:0 8px;padding:9px 12px 10px;border-radius:14px}
+  body.phone .zone:not(.messages)::after{content:"";flex-basis:100%;order:5;height:7px}
+  body.phone .zone:not(.messages) :is(.zone-top,.zone-mid,.zone-bottom){display:contents}
+  body.phone .zone:not(.messages) .zone-name{order:1;font-size:16px;line-height:30px}
+  body.phone .zone .notes{order:2;flex-wrap:nowrap;min-width:0}
+  body.phone .note.mz{display:none}
+  body.phone .zone .flow{order:3;gap:3px;font-size:12px}
+  body.phone .zone .bar{width:64px;height:5px}
+  body.phone .zone .star{order:4;width:30px;height:30px;margin:-4px -6px -4px 0}
+  body.phone .zone .star svg{width:20px;height:20px}
+  body.phone .zone .zone-temp{order:6;flex:none;width:66px;font-size:28px}
+  body.phone .zone .zone-temp small{font-size:14px}
+  body.phone .zone .toggle{order:7;flex:1;min-width:0;height:44px;line-height:1.1;padding:0 4px}
+  body.phone .zone .mini{order:8;flex:none;height:44px}
+  body.phone .zone .mini button{width:40px;font-size:26px}
+  body.phone .zone .mini span{min-width:68px}
+  body.phone .messages{border-radius:14px;padding:10px 12px 12px;gap:8px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -424,7 +459,7 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
   <div class="control" id="view-control">
   <section class="unit" id="unit" aria-label="Aircon">
     <div class="unit-top">
-      <div><div class="label">System</div><div class="state" id="ac-state">–</div>
+      <div><div class="label" id="sys-label">System</div><div class="state" id="ac-state">–</div>
         <button class="timer-left" id="timer-cancel" type="button" aria-label="Cancel the off timer" hidden></button></div>
       <div class="unit-btns">
         <button class="plus15" id="timer-add" type="button" aria-label="Off timer: add 15 minutes">+15<small>min</small></button>
@@ -492,6 +527,7 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
   </section>
 
   <section id="view-tasks" class="tasks-view" aria-label="Tasks" hidden>
+    <button class="back" id="tasks-back" type="button" hidden>‹ Back</button>
     <div class="cal-bar">
       <button class="btn" id="cal-today" type="button">Today</button>
       <div class="cal-nav"><button class="icon-btn" id="cal-prev" type="button" aria-label="Previous">‹</button><button class="icon-btn" id="cal-next" type="button" aria-label="Next">›</button></div>
@@ -694,7 +730,7 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
           <label class="field"><span class="field-label">Access token (paid ntfy plan only)</span><input type="password" id="ll-token" autocomplete="off" placeholder="Leave empty to keep as it is"></label>
           <label class="check" id="ll-token-clear-row" hidden><input type="checkbox" id="ll-token-clear"> Remove the saved token</label>
           <button class="btn primary" type="button" id="ll-save">Save</button>
-          <div><h3>Pages and features</h3><p class="muted">Untick anything tenants shouldn't see or use, on this panel and on phones. Tasks and NTFY Me are never on phones.</p></div>
+          <div><h3>Pages and features</h3><p class="muted">Untick anything tenants shouldn't see or use, on this panel and on phones. NTFY Me is never on phones.</p></div>
           <div class="ll" id="ll-features" style="margin-top:0">
             <label class="check"><input type="checkbox" data-feature="scenes"> Scenes page</label>
             <label class="check"><input type="checkbox" data-feature="events"> Schedules page (schedules don't run while it's off)</label>
@@ -871,25 +907,26 @@ const remote = !window.MYAIR_REMOTE ? null : (() => {
     return reply;
   }
 
-  const cache = {}, inflight = {}, TTL = {"/api/state": 45000, "/api/plans": 60000};
+  const cache = {}, inflight = {}, TTL = {"/api/state": 45000, "/api/plans": 60000, "/api/tasks": 60000};
   let downUntil = 0, downErr = null;
-  async function get(p){
-    const c = cache[p];
+  // args: text arguments (the Tasks page's date range); each range is kept separately.
+  async function get(p, args){
+    const key = args ? p + "?" + new URLSearchParams(args) : p, c = cache[key];
     if (c && (document.hidden || Date.now() - c.at < TTL[p])) return c.v;
     if (Date.now() < downUntil) throw downErr;  // don't spend messages while it's unreachable
-    if (!inflight[p]) inflight[p] = call("GET", p, {}).then(r => {
-      if (r.s !== 200) throw new Error("HTTP " + r.s);
-      const v = JSON.parse(r.b); cache[p] = {v, at: Date.now()}; return v;
-    }).catch(e => { downUntil = Date.now() + 30000; downErr = e; throw e; })
-      .finally(() => { delete inflight[p]; });
-    return inflight[p];
+    if (!inflight[key]) inflight[key] = call("GET", p, args ? {a: args} : {}).then(r => {
+      if (r.s !== 200){ let j = {}; try { j = JSON.parse(r.b); } catch(x){} const e = new Error(j.error || "HTTP " + r.s); e.refused = true; throw e; }
+      const v = JSON.parse(r.b); cache[key] = {v, at: Date.now()}; return v;
+    }).catch(e => { if (!e.refused){ downUntil = Date.now() + 30000; downErr = e; } throw e; })
+      .finally(() => { delete inflight[key]; });
+    return inflight[key];
   }
   async function post(p, more){
     let r;
     try { r = await call("POST", p, more); } catch(e){ return {ok:false, error:e.message}; }
     let j = {}; try { j = JSON.parse(r.b); } catch(e){}
     if (r.st) cache["/api/state"] = {v: r.st, at: Date.now()};
-    delete cache["/api/plans"];
+    for (const k in cache) if (k !== "/api/state") delete cache[k];  // plans and tasks may have changed
     return r.s === 200 ? {ok:true, id:j.id} : {ok:false, error:j.error || "The controller didn't accept that."};
   }
   document.addEventListener("visibilitychange", () => {
@@ -900,6 +937,8 @@ const remote = !window.MYAIR_REMOTE ? null : (() => {
   return {ready, get, post, server: cfg.s.replace(/^https?:\/\//,""),
     updatedAt: () => cache["/api/state"] && cache["/api/state"].at};
 })();
+
+if (remote) document.body.classList.add("phone");
 
 // ------------------------------------------------------------ talking to the controller
 
@@ -1030,6 +1069,11 @@ function render(){
   $("app").classList.toggle("disabled", lost || !state || !!(state && state.readOnly));
   const link = $("link");
   if (lost){ link.className = "chip bad"; link.textContent = "Not connected"; }
+  if (remote && (lost || state)){
+    const ok = !lost && state.connected, sys = $("sys-label");
+    sys.className = "label " + (ok ? "ok" : "bad");
+    sys.textContent = ok ? "System connected" : "System not connected";
+  }
   if (remote){
     const at = remote.updatedAt();
     $("remote-about").innerHTML = `<dt>Through</dt><dd>${esc(remote.server)}</dd><dt>Last update</dt><dd>${at ? new Date(at).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit",second:"2-digit"}) : "–"}</dd>`;
@@ -1091,11 +1135,12 @@ function render(){
     tg.classList.toggle("ready", open && !on);
     tg.title = open && !on ? "Comes on with the power" : "";
     tg.textContent = !lit ? "Off" : z.constant ? "Always on" : "On";
+    if (remote && lit && z.constant) tg.innerHTML = "Always<br>on";  // wraps in the phone's narrow button
     tg.disabled = z.constant;
     el.querySelector(".val").textContent = tempCtl(z) ? fmt(held("z"+z.n+"temp", z.setTemp))+"°" : held("z"+z.n+"pct", z.percent)+"%";
     el.querySelector(".mini").title = tempCtl(z) ? "Zone set temperature" : "Airflow";
     const notes = [];
-    if (myZone === z.n) notes.push(["MyZone","","The aircon follows this room's temperature"]);
+    if (myZone === z.n) notes.push(["MyZone","mz","The aircon follows this room's temperature"]);  // phones show the star only
     if (!z.sensor && !z.room) notes.push(["No sensor","","No temperature sensor: set its airflow %"]);
     if (z.room && !z.room.fresh) notes.push(["No reading","warn",`${z.room.label} hasn't been heard lately: set the airflow % for now`]);
     if (z.lowBattery) notes.push(["Battery low","warn", z.room && z.room.lowBattery ? `${z.room.label} needs a new CR2032` : "The sensor's battery is low"]);
@@ -1104,7 +1149,7 @@ function render(){
   $("zones-sum").textContent = `${openCount} of ${state.zones.length} on`;
   const feat = features();
   $("messages").hidden = !feat.tasks;
-  if (feat.tasks){ if (state.tasks) checkReminders(state.tasks.messages); renderMessages(); }
+  if (feat.tasks){ if (state.tasks && !remote) checkReminders(state.tasks.messages); renderMessages(); }  // phones don't ring
   if (!remote) checkChimes(state.chimes);
   $("zones").style.setProperty("--rows", Math.max(1, Math.ceil((state.zones.length + (feat.tasks ? 1 : 0)) / 4)));
 
@@ -1146,7 +1191,7 @@ if (window.ResizeObserver) new ResizeObserver(fitUnit).observe($("view-control")
 // NTFY Me are wall panel only.
 function features(){
   const f = (state && state.features) || {}, on = k => f[k] !== false;
-  return {scenes: on("scenes"), events: on("events"), tasks: !remote && on("tasks"), ntfy: !remote && on("ntfy"), offTimer: on("offTimer")};
+  return {scenes: on("scenes"), events: on("events"), tasks: on("tasks"), ntfy: !remote && on("ntfy"), offTimer: on("offTimer")};
 }
 const viewAllowed = v => v === "control" || !!features()[v];
 function applyFeatures(){
@@ -1154,7 +1199,7 @@ function applyFeatures(){
   for (const b of $("tabs").children) b.hidden = !viewAllowed(b.dataset.view);
   if (showView.current && !viewAllowed(showView.current)) showView("control");
   $("save-as-event").hidden = !f.events;
-  $("set-sounds").hidden = !f.tasks;
+  $("set-sounds").hidden = !f.tasks || !!remote;
   $("set-ntfy").hidden = !f.ntfy;
   if (f.ntfy) ntStart(); else ntStop();
   $("timer-add").hidden = !f.offTimer;
@@ -1224,6 +1269,7 @@ function showView(v){
   try { localStorage.setItem("myair-view", v); } catch(e){}
   showView.current = v;
   document.body.dataset.view = v;
+  if (remote) window.scrollTo(0, 0);
   fitUnit();
   if (v === "scenes" || v === "events") loadPlans();
   if (v === "tasks"){ if (!cal.anchor) cal.anchor = todayYmd(); loadTasks(); }
@@ -1380,6 +1426,8 @@ setInterval(() => { if (!$("settings").hidden){ loadRemoteInfo(); loadRooms(); }
 if (remote){
   for (const id of ["set-wifi","set-phone","set-sounds","set-dim","set-ntfy","set-rooms","set-source","set-update","set-about"]) $(id).hidden = true;
   $("set-remote").hidden = false;
+  $("tasks-back").hidden = false;
+  $("tasks-back").onclick = () => showView("control");
   $("lost-banner").textContent = remote.ready
     ? "Can't reach your aircon through the internet right now. It keeps running as it was last set, and the wall panel still works."
     : "This phone isn't set up yet. On the wall panel, open Settings (the gear), then Phone access, and scan the QR code.";
@@ -1436,9 +1484,10 @@ async function apiPlans(){
   if (!r.ok) throw new Error("HTTP "+r.status);
   return r.json();
 }
-// Tasks page (wall panel only): every item, plus which dates from..to (yyyymmdd) have one.
+// Tasks page: every item, plus which dates from..to (yyyymmdd) have one.
 async function apiTasks(from, to){
   if (window.MYAIR_DEMO) return demo.tasks(from, to);
+  if (remote) return remote.get("/api/tasks", {from: String(from), to: String(to)});
   const r = await fetch(`/api/tasks?from=${from}&to=${to}`,{cache:"no-store"});
   if (!r.ok) throw new Error("HTTP "+r.status);
   return r.json();
@@ -1755,7 +1804,7 @@ $("save-as-event").onclick = async () => {
   openEvent(null, "current");
 };
 
-// ------------------------------------------------------------ tasks page (wall panel only)
+// ------------------------------------------------------------ tasks page
 // Calendar events and to-dos kept on the board (src/tasks.*), shown like Google
 // Calendar: Month / Week / Schedule, with a to-do list beside it. Dates are
 // yyyymmdd numbers, times minutes after midnight (-1 = all day / no time).
@@ -1809,7 +1858,7 @@ async function loadTasks(){
   try {
     const [d, t] = await Promise.all([apiTasks(from, to), apiTasks(addDaysYmd(today, -14), addDaysYmd(today, 30))]);
     cal.data = d; cal.todo = t;
-  } catch(e){ return; }
+  } catch(e){ if (remote) toast(e.message); return; }
   renderTasks();
 }
 // date -> items on that date, all-day first, then by time
