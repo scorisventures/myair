@@ -231,6 +231,14 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
 .landlord summary{cursor:pointer;font-weight:600;padding:6px 0}
 .ll{display:grid;gap:10px;margin-top:10px}
 .sheet input[inputmode=numeric]{max-width:220px}
+/* Settings: each section in its own card, one after the other; the landlord's cards after a heading */
+#settings .sheet{width:min(620px,100%);gap:12px}
+.set-cards{display:flex;flex-direction:column;gap:12px}
+.set-card{background:color-mix(in srgb,var(--sunk) 45%,var(--panel));border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:10px;min-width:0}
+.set-card h3{margin:0;font-size:16px}
+.set-card .rooms,.set-card .ll{margin-top:0}
+.set-group{margin:8px 0 0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:10px}
+.set-lock{font-size:12px;text-transform:none;letter-spacing:0;color:var(--ok);border:1px solid currentColor;border-radius:6px;padding:0 6px;font-weight:600}
 .share-row{display:flex;gap:8px;align-items:center}.share-row input{flex:1;min-width:0}
 .share-out{display:grid;gap:8px;border:1.5px solid var(--accent);border-radius:12px;padding:12px}
 .share-out .qr{width:min(160px,100%)}
@@ -705,45 +713,103 @@ body.phone[data-view="tasks"] header{display:none}
 <div class="sheet-bg" id="settings" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
     <div style="display:flex;justify-content:space-between;align-items:center"><h2 id="settings-title">Settings</h2><button class="btn" id="close-settings">Done</button></div>
-    <div id="set-wifi">
-      <h3>Home Wi-Fi</h3>
-      <form id="wifi-form">
-        <input type="text" id="wifi-ssid" placeholder="Network name" autocomplete="off" aria-label="Network name">
-        <input type="password" id="wifi-pass" placeholder="Password" aria-label="Password">
-        <button class="btn primary" type="submit">Save and restart</button>
-      </form>
-      <p class="muted" style="margin-top:8px">The controller also runs its own network, <b>MyAir</b>, so this page still works if your router is off. Its password is in the landlord settings. Once a landlord PIN is set, changing Wi-Fi, the data source or the software needs the landlord settings unlocked.</p>
-    </div>
-    <div id="set-phone">
+    <div class="set-cards">
+    <section class="set-card" id="set-phone">
       <h3>Phone access</h3>
       <p class="muted" id="pa-status">–</p>
       <div class="qr-box" id="pa-qr-box" hidden>
         <div class="qr" id="pa-qr" role="img" aria-label="QR code for phone access"></div>
         <p class="muted">Scan it with your phone's camera and open the link, then choose <b>Add to Home Screen</b>. It works at home and away. If the internet is down, use this panel. Each scan sets up one phone; the code changes after a phone joins.</p>
       </div>
-      <details class="landlord" id="landlord">
-        <summary>Landlord settings</summary>
-        <form class="ll" id="ll-unlock">
-          <p class="muted" id="ll-unlock-text">Enter the landlord PIN.</p>
+    </section>
+    <section class="set-card" id="set-remote" hidden>
+      <h3>Phone access</h3>
+      <p class="muted">This phone reaches your aircon through the internet (via ntfy.sh), at home and away. While this page is open it updates about once a minute, and straight away after each change. If the internet at home is down, use the wall panel.</p>
+      <dl class="kv" id="remote-about"></dl>
+    </section>
+    <section class="set-card" id="set-sounds">
+      <h3>Reminder sounds</h3>
+      <div class="field"><label class="field-label" for="snd-vol">Volume</label><input type="range" id="snd-vol" min="0" max="100" step="5"></div>
+      <div class="sheet-actions"><button class="btn" type="button" data-play="1">Play chime</button><button class="btn" type="button" data-play="2">Play bell</button><button class="btn" type="button" data-play="3">Play alarm</button></div>
+      <label class="check"><input type="checkbox" id="snd-quiet"> Quiet hours (no sound)</label>
+      <div class="times" id="snd-times">
+        <label class="field"><span class="field-label">From</span><input type="time" id="snd-from" step="60"></label>
+        <label class="field"><span class="field-label">To</span><input type="time" id="snd-to" step="60"></label>
+      </div>
+      <p class="muted">Reminders and camera alerts still show during quiet hours. These settings are kept on this tablet. If no sound plays, tap the screen once after the page loads, or turn on <b>Autoplay audio</b> in Fully Kiosk.</p>
+    </section>
+    <section class="set-card" id="set-dim">
+      <h3>Screen dimming</h3>
+      <label class="field"><span class="field-label">Dim the screen after</span><select id="dim-after"><option value="0">Never</option><option value="1">1 minute</option><option value="2">2 minutes</option><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option></select></label>
+      <label class="check"><input type="checkbox" id="dim-night"> Darker during quiet hours</label>
+      <p class="muted">The screen goes dark with a clock when nobody has touched it for a while. A tap, a new reminder or a camera alert brings it back (after a reminder or alert it stays bright for 30 minutes). Quiet hours are set under Reminder sounds. Keep the tablet's screen on with Android's <b>Stay awake</b> (Developer options). Kept on this tablet.</p>
+    </section>
+    <section class="set-card" id="set-ntfy">
+      <h3>NTFY Me on this tablet</h3>
+      <label class="check"><input type="checkbox" id="nt-alerts"> Show an alert when a camera sees someone</label>
+      <label class="check"><input type="checkbox" id="nt-statusnote"> Also show pause / resume / status replies</label>
+      <div id="nt-cam-prefs"></div>
+      <p class="muted">Kept on this tablet. The camera topics are in the landlord settings.</p>
+    </section>
+    <section class="set-card" id="set-rooms">
+      <h3>Room sensors</h3>
+      <p class="muted">Bluetooth thermometers for rooms without an Advantage Air sensor. While the aircon heats or cools, the controller holds each linked room at its set temperature by changing its airflow. Match a sensor by the temperature on its screen.</p>
+      <label class="field" id="rooms-pin-row" hidden><span class="field-label">Landlord PIN (to link or unlink)</span><input type="password" inputmode="numeric" id="rooms-pin" maxlength="8" autocomplete="off"></label>
+      <div class="rooms" id="rooms-list"><p class="muted">Looking for sensors…</p></div>
+    </section>
+    <section class="set-card" id="set-wifi">
+      <h3>Home Wi-Fi</h3>
+      <form id="wifi-form">
+        <input type="text" id="wifi-ssid" placeholder="Network name" autocomplete="off" aria-label="Network name">
+        <input type="password" id="wifi-pass" placeholder="Password" aria-label="Password">
+        <button class="btn primary" type="submit">Save and restart</button>
+      </form>
+      <p class="muted">The controller also runs its own network, <b>MyAir</b>, so this page still works if your router is off. Its password is in the landlord settings. Once a landlord PIN is set, changing Wi-Fi, the data source or the software needs the landlord settings unlocked.</p>
+    </section>
+    <section class="set-card" id="set-source">
+      <h3>Data source</h3>
+      <div class="seg three" id="source">
+        <button type="button" data-v="practice">Practice data</button>
+        <button type="button" data-v="cable">Control box (read-only)</button>
+        <button type="button" data-v="control">Control box (in charge)</button>
+      </div>
+      <p class="muted">Read-only shows live readings from the cable without changing anything; the old tablet stays in charge. In charge replaces the old tablet: unplug the old tablet from the cable first (two tablets can't share it; if the controller hears another one it stops sending). The controller restarts when you switch.</p>
+    </section>
+    <section class="set-card" id="set-update">
+      <h3>Update the controller's software</h3>
+      <form id="fw-form"><input type="file" id="fw-file" accept=".bin" aria-label="Firmware file"><button class="btn" type="submit">Upload</button></form>
+    </section>
+    <section class="set-card" id="set-about"><h3>About</h3><dl class="kv" id="about"></dl></section>
+    </div>
+    <div class="set-cards" id="landlord">
+      <h3 class="set-group">Landlord settings <span class="set-lock" id="ll-lockstate" hidden>unlocked</span></h3>
+      <form class="set-card" id="ll-unlock"><h3>Unlock</h3>
+        <p class="muted" id="ll-unlock-text">Enter the landlord PIN.</p>
+        <div class="share-row">
           <input type="password" inputmode="numeric" id="ll-pin" maxlength="8" autocomplete="off" aria-label="Landlord PIN" placeholder="PIN">
           <input type="password" inputmode="numeric" id="ll-pin2" maxlength="8" autocomplete="off" aria-label="Repeat the PIN" placeholder="Repeat the PIN" hidden>
           <button class="btn primary" type="submit" id="ll-unlock-btn">Unlock</button>
-        </form>
-        <div class="ll" id="ll-panel" hidden>
+        </div>
+      </form>
+      <div class="set-cards" id="ll-panel" hidden>
+        <section class="set-card"><h3>Phone access settings</h3>
           <label class="check"><input type="checkbox" id="ll-enabled"> Phone access on</label>
           <label class="field"><span class="field-label">Phone page address</span><input type="text" id="ll-page" autocomplete="off" placeholder="https://yourname.github.io/myair/"></label>
           <label class="field"><span class="field-label">ntfy server</span><input type="text" id="ll-server" autocomplete="off" placeholder="https://ntfy.sh"></label>
           <label class="field"><span class="field-label">Access token (paid ntfy plan only)</span><input type="password" id="ll-token" autocomplete="off" placeholder="Leave empty to keep as it is"></label>
           <label class="check" id="ll-token-clear-row" hidden><input type="checkbox" id="ll-token-clear"> Remove the saved token</label>
           <button class="btn primary" type="button" id="ll-save">Save</button>
-          <div><h3>Phones</h3><p class="muted">Every phone that can control the aircon. Remove one and it stops working straight away; the others carry on.</p></div>
-          <div class="rooms" id="ll-phones" style="margin-top:0"></div>
-          <div><h3>Share a link</h3><p class="muted">For someone who isn't here to scan the code. The link sets up one phone, then stops working. Unused links stop after 7 days.</p></div>
+        </section>
+        <section class="set-card"><h3>Phones</h3><p class="muted">Every phone that can control the aircon. Remove one and it stops working straight away; the others carry on.</p>
+          <div class="rooms" id="ll-phones"></div>
+        </section>
+        <section class="set-card"><h3>Share a link</h3><p class="muted">For someone who isn't here to scan the code. The link sets up one phone, then stops working. Unused links stop after 7 days.</p>
           <div class="share-row"><input type="text" id="ll-share-name" maxlength="32" autocomplete="off" placeholder="Who is it for? e.g. Mark" aria-label="Who the link is for"><button class="btn primary" type="button" id="ll-share-make">Make link</button></div>
           <div class="share-out" id="ll-share-out" hidden></div>
-          <div class="rooms" id="ll-links" style="margin-top:0"></div>
-          <div><h3>Pages and features</h3><p class="muted">Untick anything tenants shouldn't see or use, on this panel and on phones. NTFY Me is never on phones.</p></div>
-          <div class="ll" id="ll-features" style="margin-top:0">
+          <div class="rooms" id="ll-links"></div>
+        </section>
+        <section class="set-card"><h3>Pages and features</h3><p class="muted">Untick anything tenants shouldn't see or use, on this panel and on phones. NTFY Me is never on phones.</p>
+          <div class="ll" id="ll-features">
             <label class="check"><input type="checkbox" data-feature="scenes"> Scenes page</label>
             <label class="check"><input type="checkbox" data-feature="events"> Schedules page (schedules don't run while it's off)</label>
             <label class="check"><input type="checkbox" data-feature="tasks"> Tasks page and Messages card</label>
@@ -751,8 +817,9 @@ body.phone[data-view="tasks"] header{display:none}
             <label class="check"><input type="checkbox" data-feature="offTimer"> Off timer (+15 button)</label>
           </div>
           <button class="btn primary" type="button" id="ll-features-save">Save pages and features</button>
-          <div><h3>NTFY Me cameras</h3><p class="muted">Where the camera script listens and posts, as in the NTFY Me phone app. Only the wall panel uses these.</p></div>
-          <div class="ll" id="ll-nt" style="margin-top:0">
+        </section>
+        <section class="set-card"><h3>NTFY Me cameras</h3><p class="muted">Where the camera script listens and posts, as in the NTFY Me phone app. Only the wall panel uses these.</p>
+          <div class="ll" id="ll-nt">
             <label class="field"><span class="field-label">ntfy server</span><input type="text" id="ll-nt-server" autocomplete="off"></label>
             <label class="field"><span class="field-label">Control topic (commands)</span><input type="text" id="ll-nt-control" autocomplete="off"></label>
             <label class="field"><span class="field-label">Front camera topic</span><input type="text" id="ll-nt-front" autocomplete="off"></label>
@@ -762,67 +829,23 @@ body.phone[data-view="tasks"] header{display:none}
             <label class="check" id="ll-nt-token-clear-row" hidden><input type="checkbox" id="ll-nt-token-clear"> Remove the saved token</label>
           </div>
           <button class="btn primary" type="button" id="ll-nt-save">Save camera settings</button>
-          <div><h3>Controller's own Wi-Fi</h3><p class="muted">The backup network this panel can join if the home router is off. Each controller makes its own password.</p></div>
+        </section>
+        <section class="set-card"><h3>Controller's own Wi-Fi</h3><p class="muted">The backup network this panel can join if the home router is off. Each controller makes its own password.</p>
           <dl class="kv" id="ll-ap"><dt>Network</dt><dd><b>MyAir</b></dd><dt>Password</dt><dd><b class="digits" id="ll-ap-pass">–</b></dd></dl>
           <button class="btn danger" type="button" id="ll-ap-new">Make a new password</button>
-          <div><h3>New tenant</h3><p class="muted">Removes every phone, cancels unused links and makes a new QR code.</p></div>
+        </section>
+        <section class="set-card"><h3>New tenant</h3><p class="muted">Removes every phone, cancels unused links and makes a new QR code.</p>
           <button class="btn danger" type="button" id="ll-new-tenant">New tenant</button>
-          <form class="ll" id="ll-change-pin"><h3>Change PIN</h3>
+        </section>
+        <form class="set-card" id="ll-change-pin"><h3>Landlord PIN</h3>
+          <div class="share-row">
             <input type="password" inputmode="numeric" id="ll-newpin" maxlength="8" autocomplete="off" aria-label="New PIN" placeholder="New PIN (4 to 8 digits)">
-            <button class="btn" type="submit">Change PIN</button></form>
+            <button class="btn" type="submit">Change PIN</button>
+          </div>
           <button class="btn" type="button" id="ll-lock">Lock landlord settings</button>
-        </div>
-      </details>
-    </div>
-    <div id="set-remote" hidden>
-      <h3>Phone access</h3>
-      <p class="muted">This phone reaches your aircon through the internet (via ntfy.sh), at home and away. While this page is open it updates about once a minute, and straight away after each change. If the internet at home is down, use the wall panel.</p>
-      <dl class="kv" id="remote-about" style="margin-top:8px"></dl>
-    </div>
-    <div id="set-sounds">
-      <h3>Reminder sounds</h3>
-      <div class="field"><label class="field-label" for="snd-vol">Volume</label><input type="range" id="snd-vol" min="0" max="100" step="5"></div>
-      <div class="sheet-actions" style="margin-top:8px"><button class="btn" type="button" data-play="1">Play chime</button><button class="btn" type="button" data-play="2">Play bell</button><button class="btn" type="button" data-play="3">Play alarm</button></div>
-      <label class="check" style="margin-top:10px"><input type="checkbox" id="snd-quiet"> Quiet hours (no sound)</label>
-      <div class="times" id="snd-times" style="margin-top:8px">
-        <label class="field"><span class="field-label">From</span><input type="time" id="snd-from" step="60"></label>
-        <label class="field"><span class="field-label">To</span><input type="time" id="snd-to" step="60"></label>
+        </form>
       </div>
-      <p class="muted" style="margin-top:8px">Reminders and camera alerts still show during quiet hours. These settings are kept on this tablet. If no sound plays, tap the screen once after the page loads, or turn on <b>Autoplay audio</b> in Fully Kiosk.</p>
     </div>
-    <div id="set-dim">
-      <h3>Screen dimming</h3>
-      <label class="field"><span class="field-label">Dim the screen after</span><select id="dim-after"><option value="0">Never</option><option value="1">1 minute</option><option value="2">2 minutes</option><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option></select></label>
-      <label class="check" style="margin-top:10px"><input type="checkbox" id="dim-night"> Darker during quiet hours</label>
-      <p class="muted" style="margin-top:8px">The screen goes dark with a clock when nobody has touched it for a while. A tap, a new reminder or a camera alert brings it back (after a reminder or alert it stays bright for 30 minutes). Quiet hours are set under Reminder sounds. Keep the tablet's screen on with Android's <b>Stay awake</b> (Developer options). Kept on this tablet.</p>
-    </div>
-    <div id="set-ntfy">
-      <h3>NTFY Me on this tablet</h3>
-      <label class="check"><input type="checkbox" id="nt-alerts"> Show an alert when a camera sees someone</label>
-      <label class="check" style="margin-top:6px"><input type="checkbox" id="nt-statusnote"> Also show pause / resume / status replies</label>
-      <div id="nt-cam-prefs" style="margin-top:6px"></div>
-      <p class="muted" style="margin-top:8px">Kept on this tablet. The camera topics are in the landlord settings.</p>
-    </div>
-    <div id="set-rooms">
-      <h3>Room sensors</h3>
-      <p class="muted">Bluetooth thermometers for rooms without an Advantage Air sensor. While the aircon heats or cools, the controller holds each linked room at its set temperature by changing its airflow. Match a sensor by the temperature on its screen.</p>
-      <label class="field" id="rooms-pin-row" style="margin-top:8px" hidden><span class="field-label">Landlord PIN (to link or unlink)</span><input type="password" inputmode="numeric" id="rooms-pin" maxlength="8" autocomplete="off"></label>
-      <div class="rooms" id="rooms-list"><p class="muted">Looking for sensors…</p></div>
-    </div>
-    <div id="set-source">
-      <h3>Data source</h3>
-      <div class="seg three" id="source">
-        <button type="button" data-v="practice">Practice data</button>
-        <button type="button" data-v="cable">Control box (read-only)</button>
-        <button type="button" data-v="control">Control box (in charge)</button>
-      </div>
-      <p class="muted" style="margin-top:8px">Read-only shows live readings from the cable without changing anything; the old tablet stays in charge. In charge replaces the old tablet: unplug the old tablet from the cable first (two tablets can't share it; if the controller hears another one it stops sending). The controller restarts when you switch.</p>
-    </div>
-    <div id="set-update">
-      <h3>Update the controller's software</h3>
-      <form id="fw-form"><input type="file" id="fw-file" accept=".bin" aria-label="Firmware file"><button class="btn" type="submit">Upload</button></form>
-    </div>
-    <div id="set-about"><h3>About</h3><dl class="kv" id="about"></dl></div>
   </div>
 </div>
 
@@ -1304,8 +1327,8 @@ $("settings").onclick = e => { if (e.target === $("settings")) closeSettings(); 
 // null = not unlocked yet (and says so).
 function landlordPinFor(what){
   if (!remoteInfo || !remoteInfo.pinSet || landlordPin) return landlordPin;
-  toast(`Unlock the landlord settings (under Phone access) first, then ${what}.`);
-  $("landlord").open = true;
+  toast(`Unlock the landlord settings (at the bottom of Settings) first, then ${what}.`);
+  const u = $("ll-unlock"); if (u.scrollIntoView) u.scrollIntoView({block: "center", behavior: "smooth"});
   return null;
 }
 $("source").onclick = async e => {
@@ -1397,6 +1420,7 @@ function renderRemoteInfo(){
   $("ll-unlock-btn").textContent = i.pinSet ? "Unlock" : "Set PIN";
   $("ll-unlock").hidden = !!landlordPin;
   $("ll-panel").hidden = !landlordPin;
+  $("ll-lockstate").hidden = !landlordPin;
   $("ll-token-clear-row").hidden = !i.tokenSet;
   if (landlordPin && !landlordFilled){
     landlordFilled = true;
@@ -1489,7 +1513,6 @@ $("ll-share-make").onclick = async () => {
 
 function lockLandlord(){
   landlordPin = ""; landlordFilled = false;
-  $("landlord").open = false;
   for (const id of ["ll-pin","ll-pin2","ll-newpin","ll-token"]) $(id).value = "";
   armTenant(false); armApNew(false);
   $("ll-ap-pass").textContent = "–";
@@ -1576,7 +1599,7 @@ setInterval(() => { if (!$("settings").hidden){ loadRemoteInfo(); loadRooms(); l
 
 // The phone copy only offers what phones may do from outside.
 if (remote){
-  for (const id of ["set-wifi","set-phone","set-sounds","set-dim","set-ntfy","set-rooms","set-source","set-update","set-about"]) $(id).hidden = true;
+  for (const id of ["set-wifi","set-phone","set-sounds","set-dim","set-ntfy","set-rooms","set-source","set-update","set-about","landlord"]) $(id).hidden = true;
   $("set-remote").hidden = false;
   $("tasks-back").hidden = false;
   $("tasks-back").onclick = () => showView("control");
