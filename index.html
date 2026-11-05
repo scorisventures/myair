@@ -155,7 +155,7 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
 
 /* banners, toast, settings */
 .banner{grid-column:1/-1;border-radius:12px;padding:10px 14px;font-size:15px;border:1.5px solid currentColor}
-.banner.warn{color:var(--warn)}.banner.bad{color:var(--bad)}
+.banner.warn{color:var(--warn)}.banner.bad{color:var(--bad)}.banner.ok{color:var(--ok)}
 .disabled .unit button,.disabled .zones button,.disabled .scene .run{pointer-events:none;opacity:.5}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));max-width:min(560px,calc(100% - 32px));
   background:var(--ink);color:var(--bg);border-radius:12px;padding:12px 16px;font-size:16px;box-shadow:0 6px 24px rgb(0 0 0 / .25);transition:opacity .2s}
@@ -231,6 +231,11 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
 .landlord summary{cursor:pointer;font-weight:600;padding:6px 0}
 .ll{display:grid;gap:10px;margin-top:10px}
 .sheet input[inputmode=numeric]{max-width:220px}
+.share-row{display:flex;gap:8px;align-items:center}.share-row input{flex:1;min-width:0}
+.share-out{display:grid;gap:8px;border:1.5px solid var(--accent);border-radius:12px;padding:12px}
+.share-out .qr{width:min(160px,100%)}
+.room-row .acts{display:flex;gap:6px;flex:none}.room-row .acts .btn{padding:5px 10px;font-size:13px}
+.room-row.removing{border-color:var(--bad)}
 
 /* tasks page (calendar) — item colours c0-c8 */
 .c0{--c:var(--c0)}.c1{--c:var(--c1)}.c2{--c:var(--c2)}.c3{--c:var(--c3)}.c4{--c:var(--c4)}.c5{--c:var(--c5)}.c6{--c:var(--c6)}.c7{--c:var(--c7)}.c8{--c:var(--c8)}
@@ -454,6 +459,7 @@ body.phone[data-view="tasks"] header{display:none}
     <button class="icon-btn" id="open-settings" aria-label="Settings"><svg><use href="#i-gear"/></svg></button>
   </header>
   <div class="banner warn" id="ro-banner" hidden>Read-only: these are live readings from your control box. The old tablet is still in charge, so make changes on the old tablet.</div>
+  <div class="banner ok" id="join-banner" hidden>Setting up this phone… This takes a few seconds.</div>
   <div class="banner bad" id="lost-banner" hidden>Can't reach the MyAir controller. Check that this tablet is on Wi-Fi. The aircon keeps running as it was last set.</div>
 
   <div class="control" id="view-control">
@@ -713,7 +719,7 @@ body.phone[data-view="tasks"] header{display:none}
       <p class="muted" id="pa-status">–</p>
       <div class="qr-box" id="pa-qr-box" hidden>
         <div class="qr" id="pa-qr" role="img" aria-label="QR code for phone access"></div>
-        <p class="muted">Scan it with your phone's camera and open the link, then choose <b>Add to Home Screen</b>. It works at home and away. If the internet is down, use this panel.</p>
+        <p class="muted">Scan it with your phone's camera and open the link, then choose <b>Add to Home Screen</b>. It works at home and away. If the internet is down, use this panel. Each scan sets up one phone; the code changes after a phone joins.</p>
       </div>
       <details class="landlord" id="landlord">
         <summary>Landlord settings</summary>
@@ -730,6 +736,12 @@ body.phone[data-view="tasks"] header{display:none}
           <label class="field"><span class="field-label">Access token (paid ntfy plan only)</span><input type="password" id="ll-token" autocomplete="off" placeholder="Leave empty to keep as it is"></label>
           <label class="check" id="ll-token-clear-row" hidden><input type="checkbox" id="ll-token-clear"> Remove the saved token</label>
           <button class="btn primary" type="button" id="ll-save">Save</button>
+          <div><h3>Phones</h3><p class="muted">Every phone that can control the aircon. Remove one and it stops working straight away; the others carry on.</p></div>
+          <div class="rooms" id="ll-phones" style="margin-top:0"></div>
+          <div><h3>Share a link</h3><p class="muted">For someone who isn't here to scan the code. The link sets up one phone, then stops working. Unused links stop after 7 days.</p></div>
+          <div class="share-row"><input type="text" id="ll-share-name" maxlength="32" autocomplete="off" placeholder="Who is it for? e.g. Mark" aria-label="Who the link is for"><button class="btn primary" type="button" id="ll-share-make">Make link</button></div>
+          <div class="share-out" id="ll-share-out" hidden></div>
+          <div class="rooms" id="ll-links" style="margin-top:0"></div>
           <div><h3>Pages and features</h3><p class="muted">Untick anything tenants shouldn't see or use, on this panel and on phones. NTFY Me is never on phones.</p></div>
           <div class="ll" id="ll-features" style="margin-top:0">
             <label class="check"><input type="checkbox" data-feature="scenes"> Scenes page</label>
@@ -753,7 +765,7 @@ body.phone[data-view="tasks"] header{display:none}
           <div><h3>Controller's own Wi-Fi</h3><p class="muted">The backup network this panel can join if the home router is off. Each controller makes its own password.</p></div>
           <dl class="kv" id="ll-ap"><dt>Network</dt><dd><b>MyAir</b></dd><dt>Password</dt><dd><b class="digits" id="ll-ap-pass">–</b></dd></dl>
           <button class="btn danger" type="button" id="ll-ap-new">Make a new password</button>
-          <div><h3>New tenant</h3><p class="muted">Makes a new QR code. Phones set up before stop working straight away.</p></div>
+          <div><h3>New tenant</h3><p class="muted">Removes every phone, cancels unused links and makes a new QR code.</p></div>
           <button class="btn danger" type="button" id="ll-new-tenant">New tenant</button>
           <form class="ll" id="ll-change-pin"><h3>Change PIN</h3>
             <input type="password" inputmode="numeric" id="ll-newpin" maxlength="8" autocomplete="off" aria-label="New PIN" placeholder="New PIN (4 to 8 digits)">
@@ -832,31 +844,86 @@ const pending = {};   // key -> {v, until}: values the user just set, shown unti
 // Used when this page is the phone copy (window.MYAIR_REMOTE, built by embed_page.py).
 // The link from the wall panel's QR code carries the topic and key after the "#",
 // which browsers never send to a server. Message format: src/remote_link.h.
+// Each phone has its own id and key (src/phone_book.h): a set-up link (the QR code,
+// or a link the landlord shares) only lets the phone join, sending a key it makes
+// itself; after that the address bar holds the phone's own link instead.
 // ntfy.sh's free service allows 250 messages a day, so the state is asked for at
 // most every 45 seconds, never while the page is hidden, and replies to changes
 // carry the new state.
 const remote = !window.MYAIR_REMOTE ? null : (() => {
   const enc = new TextEncoder(), dec = new TextDecoder();
+  // me: this phone {t, s, p (id), k}. joinWith: a set-up code {t, s, i, k, mine}, where
+  // i "" is the old shared key of phones set up before 2026-11-06 and mine is the key
+  // this phone made for itself (kept, so asking again after a lost answer is the same ask).
   const h = new URLSearchParams(location.hash.slice(1));
-  let cfg = {t: h.get("t"), k: h.get("k"), s: h.get("s") || "https://ntfy.sh"};
-  try {
-    if (cfg.t && cfg.k) localStorage.setItem("myair-remote", JSON.stringify(cfg));
-    else cfg = JSON.parse(localStorage.getItem("myair-remote")) || cfg;
-  } catch(e){}
-  const ready = !!(cfg.t && cfg.k && window.crypto && crypto.subtle);
+  const load = k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } };
+  const store = (k, v) => { try { if (v) localStorage.setItem(k, JSON.stringify(v)); else localStorage.removeItem(k); } catch(e){} };
+  const NTFY = "https://ntfy.sh";
+  let me = load("myair-remote"), joinWith = load("myair-join");
+  const ht = h.get("t"), hk = h.get("k"), hs = h.get("s") || NTFY;
+  if (ht && hk){
+    if (h.get("p")) me = {t: ht, s: hs, p: h.get("p"), k: hk};                      // this phone's own link
+    else if (h.get("i")) joinWith = {t: ht, s: hs, i: h.get("i"), k: hk};          // a set-up link
+    else if (!(me && me.p && me.t === ht)) joinWith = {t: ht, s: hs, i: "", k: hk}; // the old shared link
+  }
+  if (me && !me.p){ if (!joinWith) joinWith = {t: me.t, s: me.s || NTFY, i: "", k: me.k}; me = null; }  // stored before 2026-11-06
+  if (me && !me.s) me.s = NTFY;
+  store("myair-remote", me); store("myair-join", joinWith);
+  const cfg = {t: (joinWith || me || {}).t, s: (joinWith || me || {}).s || NTFY};
+  const ready = !!(cfg.t && window.crypto && crypto.subtle);
   const toB64 = u => { let t = ""; for (const x of u) t += String.fromCharCode(x); return btoa(t); };
+  const toB64Url = u => toB64(u).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
   const fromB64 = t => Uint8Array.from(atob(t.replace(/-/g,"+").replace(/_/g,"/") + "===".slice((t.length+3)%4)), c => c.charCodeAt(0));
-  const keyP = ready ? crypto.subtle.importKey("raw", fromB64(cfg.k), "AES-GCM", false, ["encrypt","decrypt"]) : null;
+  const importKey = k => crypto.subtle.importKey("raw", fromB64(k), "AES-GCM", false, ["encrypt","decrypt"]);
+  let keyP = ready && me ? importKey(me.k) : null, joinKeyP = ready && joinWith ? importKey(joinWith.k) : null;
+  function showOwnLink(){
+    if (!me) return;
+    const q = new URLSearchParams({t: me.t, p: me.p, k: me.k});
+    if (me.s !== NTFY) q.set("s", me.s);
+    try { history.replaceState(null, "", location.pathname + location.search + "#" + q); } catch(e){}
+  }
+  if (!joinWith) showOwnLink();
   const extra = dir => enc.encode(dir + "|" + cfg.t);
-  async function seal(text){
+  async function seal(text, keyPromise){
     const iv = crypto.getRandomValues(new Uint8Array(12));
-    const ct = new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM", iv, additionalData: extra("c")}, await keyP, enc.encode(text)));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM", iv, additionalData: extra("c")}, await keyPromise, enc.encode(text)));
     const all = new Uint8Array(12 + ct.length); all.set(iv); all.set(ct, 12);
     return toB64(all);
   }
+  // Every phone hears every reply; the ones sealed with another phone's key don't open.
   async function open(text){
     const all = fromB64(text);
-    return dec.decode(await crypto.subtle.decrypt({name:"AES-GCM", iv: all.slice(0,12), additionalData: extra("r")}, await keyP, all.slice(12)));
+    for (const kp of [keyP, joinKeyP]){
+      if (!kp) continue;
+      try { return dec.decode(await crypto.subtle.decrypt({name:"AES-GCM", iv: all.slice(0,12), additionalData: extra("r")}, await kp, all.slice(12))); }
+      catch(e){}
+    }
+    throw new Error("not for this phone");
+  }
+  const deviceName = () => { const u = navigator.userAgent || "";
+    return /iPhone/.test(u) ? "iPhone" : /iPad/.test(u) ? "iPad" : /Android/.test(u) ? (/Mobile/.test(u) ? "Android phone" : "Android tablet") : "Phone"; };
+  // Set when the controller says this phone's access was removed (or the link was used):
+  // nothing more is sent, and the page says why.
+  let gone = "", joining = null;
+  function join(){
+    if (!joinWith) return Promise.resolve();
+    return joining || (joining = (async () => {
+      const note = document.getElementById("join-banner");
+      if (note) note.hidden = false;
+      try {
+        if (!joinWith.mine){ joinWith.mine = toB64Url(crypto.getRandomValues(new Uint8Array(32))); store("myair-join", joinWith); }
+        const r = await call("POST", "/api/join", {a: {key: joinWith.mine, device: deviceName()}}, true);
+        let j = {}; try { j = JSON.parse(r.b); } catch(e){}
+        let refused = "";
+        if (r.s === 200 && j.id){ me = {t: joinWith.t, s: joinWith.s, p: j.id, k: joinWith.mine}; keyP = importKey(me.k); }
+        else refused = j.error || "This phone couldn't be set up. Ask the landlord for a new link.";
+        joinWith = null; joinKeyP = null;
+        store("myair-remote", me); store("myair-join", null);
+        showOwnLink();
+        if (refused && !me) gone = refused;  // nothing else to use
+        if (refused) throw new Error(refused);
+      } finally { if (note) note.hidden = true; joining = null; }
+    })());
   }
 
   // Replies arrive on "<topic>-r" as "<msgId> <part>/<parts> <base64 slice>".
@@ -885,12 +952,15 @@ const remote = !window.MYAIR_REMOTE ? null : (() => {
     if (w) { clearTimeout(w.timer); waiting.delete(r.i); w.resolve(r); }
   }
   const fail = (ms, msg) => new Promise((_, no) => setTimeout(() => no(new Error(msg)), ms));
-  async function call(m, p, more){
+  async function call(m, p, more, viaJoin){
     if (!ready) throw new Error("This phone isn't set up yet.");
+    if (gone) throw new Error(gone);
+    if (!viaJoin) await join();
     if (!es) connect();
     await Promise.race([opened, fail(10000, "Can't reach ntfy.sh. Check this phone's internet.")]);
     const i = [...crypto.getRandomValues(new Uint8Array(8))].map(x => x.toString(16).padStart(2,"0")).join("");
-    const body = await seal(JSON.stringify({i, t: Math.floor(Date.now()/1000), m, p, ...more}));
+    const sender = viaJoin ? joinWith.i : me.p;
+    const body = (sender ? sender + "." : "") + await seal(JSON.stringify({i, t: Math.floor(Date.now()/1000), m, p, ...more}), viaJoin ? joinKeyP : keyP);
     const reply = new Promise((resolve, reject) => {
       const timer = setTimeout(() => { waiting.delete(i); reject(new Error("Your aircon didn't answer. It may be offline, or the internet at home may be down.")); }, 15000);
       waiting.set(i, {resolve, timer});
@@ -904,7 +974,10 @@ const remote = !window.MYAIR_REMOTE ? null : (() => {
       throw new Error(r.status === 429 ? "ntfy.sh's daily message limit is used up. Use the wall panel until tomorrow."
         : r.status ? `ntfy.sh didn't accept the message (${r.status}).` : "Can't reach ntfy.sh. Check this phone's internet.");
     }
-    return reply;
+    return reply.then(r => {
+      if (r.s === 403 && !viaJoin){ let j = {}; try { j = JSON.parse(r.b); } catch(e){} if (j.gone) gone = j.error; }
+      return r;
+    });
   }
 
   const cache = {}, inflight = {}, TTL = {"/api/state": 45000, "/api/plans": 60000, "/api/tasks": 60000};
@@ -934,7 +1007,7 @@ const remote = !window.MYAIR_REMOTE ? null : (() => {
     for (const p in cache) if (Date.now() - cache[p].at > 15000) delete cache[p];
     downUntil = 0;
   });
-  return {ready, get, post, server: cfg.s.replace(/^https?:\/\//,""),
+  return {ready, get, post, gone: () => gone, server: cfg.s.replace(/^https?:\/\//,""),
     updatedAt: () => cache["/api/state"] && cache["/api/state"].at};
 })();
 
@@ -1064,7 +1137,8 @@ const tempCtl = z => z.sensor || !!(z.room && z.room.fresh);
 const hasTemp = z => z.sensor || !!z.room;
 
 function render(){
-  const lost = failures >= 3 || (!state && failures > 0);
+  const lost = failures >= 3 || (!state && failures > 0) || !!(remote && remote.gone());
+  if (remote && remote.gone()) $("lost-banner").textContent = remote.gone();
   $("lost-banner").hidden = !lost;
   $("app").classList.toggle("disabled", lost || !state || !!(state && state.readOnly));
   const link = $("link");
@@ -1298,11 +1372,11 @@ async function loadRemoteInfo(){
   renderRemoteInfo();
 }
 
-function drawQr(rows){
+function drawQr(rows, el = $("pa-qr")){
   const n = rows.length, q = 4;  // q = the quiet margin QR readers need
   let d = "";
   rows.forEach((row, y) => { for (let x = 0; x < n; x++) if (row[x] === "1") d += `M${x} ${y}h1v1h-1z`; });
-  $("pa-qr").innerHTML = `<svg viewBox="${-q} ${-q} ${n+2*q} ${n+2*q}" shape-rendering="crispEdges" aria-hidden="true"><path d="${d}" fill="#000"/></svg>`;
+  el.innerHTML = `<svg viewBox="${-q} ${-q} ${n+2*q} ${n+2*q}" shape-rendering="crispEdges" aria-hidden="true"><path d="${d}" fill="#000"/></svg>`;
 }
 
 function renderRemoteInfo(){
@@ -1334,8 +1408,84 @@ function renderRemoteInfo(){
     for (const c of $("ll-features").querySelectorAll("input")) c.checked = f[c.dataset.feature] !== false;
     ntLandlordFill();
     apLandlordFill();
+    loadPhones();
   }
 }
+
+// Landlord settings → Phones and Share a link (src/phone_book.h).
+let llPhones = null, phoneArmed = "", phoneRenaming = "";
+async function loadPhones(){
+  if (!landlordPin || remote) return;
+  let j;
+  if (window.MYAIR_DEMO) j = demo.phones();
+  else try { const r = await fetch("/api/remote/phones?pin=" + encodeURIComponent(landlordPin), {cache: "no-store"}); j = await r.json(); if (!r.ok) return; } catch(e){ return; }
+  if (!j || !Array.isArray(j.phones) || !Array.isArray(j.links)) return;
+  llPhones = j;
+  renderPhones();
+}
+async function landlordPost(path, params){
+  if (window.MYAIR_DEMO) return demo.post(path, params);
+  try {
+    const r = await fetch(path, {method: "POST", body: new URLSearchParams(params)});
+    let j = {}; try { j = await r.json(); } catch(e){}
+    return r.ok ? {...j, ok: true} : {ok: false, error: j.error || "The controller didn't accept that."};
+  } catch(e){ return {ok: false, error: "Can't reach the controller."}; }
+}
+function agoText(t){
+  if (!t) return "";
+  const m = Math.round((Date.now() / 1000 - t) / 60);
+  return m < 2 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : m < 2880 ? "yesterday" : `${Math.round(m / 1440)} days ago`;
+}
+const dayMonth = t => new Date(t * 1000).toLocaleDateString("en-AU", {day: "numeric", month: "short"});
+const HOW = {old: "Moved over from the old shared link", qr: "Joined from the wall panel's QR code", link: "Joined with a shared link"};
+function renderPhones(){
+  const j = llPhones;
+  if (!j || (phoneRenaming && document.activeElement && document.activeElement.id === "ll-rename")) return;  // don't redraw under the typing
+  $("ll-phones").innerHTML = j.phones.map(p => phoneRenaming === p.id
+    ? `<div class="room-row"><input type="text" id="ll-rename" maxlength="32" value="${esc(p.name)}" aria-label="New name"><div class="acts"><button class="btn primary" type="button" data-psave="${p.id}">Save</button></div></div>`
+    : `<div class="room-row${phoneArmed === p.id ? " removing" : ""}"><div><b>${esc(p.name)}</b><small>${HOW[p.how] || "Phone"}${p.lastSeen ? " · used " + agoText(p.lastSeen) : ""}</small></div>
+        <div class="acts"><button class="btn" type="button" data-prename="${p.id}">Rename</button><button class="btn danger" type="button" data-premove="${p.id}">${phoneArmed === p.id ? "Tap again to remove" : "Remove"}</button></div></div>`).join("")
+    || `<p class="muted">No phones yet. Scan the QR code above, or share a link.</p>`;
+  $("ll-links").innerHTML = j.links.map(l => `<div class="room-row"><div><b>${esc(l.name)}</b><small>Link not used yet${l.expires ? " · stops working " + dayMonth(l.expires) : ""}</small></div>
+    <div class="acts"><button class="btn danger" type="button" data-lcancel="${l.id}">Cancel link</button></div></div>`).join("");
+}
+$("ll-phones").onclick = async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const d = b.dataset;
+  if (d.prename){ phoneRenaming = d.prename; phoneArmed = ""; renderPhones(); const i = $("ll-rename"); if (i){ i.focus(); i.select(); } return; }
+  if (d.premove && phoneArmed !== d.premove){ phoneArmed = d.premove; return renderPhones(); }
+  let r;
+  if (d.premove){ phoneArmed = ""; r = await landlordPost("/api/remote/phone/remove", {pin: landlordPin, id: d.premove}); toast(r.ok ? "Removed. That phone no longer works." : r.error); }
+  if (d.psave){ r = await landlordPost("/api/remote/phone/rename", {pin: landlordPin, id: d.psave, name: $("ll-rename").value}); if (r.ok) phoneRenaming = ""; else toast(r.error); }
+  loadPhones();
+};
+$("ll-links").onclick = async e => {
+  const b = e.target.closest("[data-lcancel]"); if (!b) return;
+  const r = await landlordPost("/api/remote/link/cancel", {pin: landlordPin, id: b.dataset.lcancel});
+  toast(r.ok ? "Link cancelled." : r.error);
+  loadPhones();
+};
+$("ll-share-make").onclick = async () => {
+  const name = $("ll-share-name").value.trim();
+  if (!name) return toast("Type who the link is for.");
+  const r = await landlordPost("/api/remote/link", {pin: landlordPin, name});
+  if (!r.ok) return toast(r.error);
+  $("ll-share-name").value = "";
+  const out = $("ll-share-out");
+  out.hidden = false;
+  out.innerHTML = `<b>Link for ${esc(r.name)}</b><input type="text" id="ll-share-link" readonly value="${esc(r.link)}" aria-label="The link">
+    <div class="head-btns"><button class="btn primary" type="button" id="ll-share-copy">Copy</button></div>
+    <p class="muted">Paste it into a text, email or chat. It works for one phone${r.expires ? ", until " + dayMonth(r.expires) : ""}.${r.qr && r.qr.length ? " Or they can scan this:" : ""}</p><div class="qr" id="ll-share-qr"></div>`;
+  if (r.qr && r.qr.length) drawQr(r.qr, $("ll-share-qr")); else $("ll-share-qr").hidden = true;
+  $("ll-share-copy").onclick = async () => {
+    const i = $("ll-share-link");
+    let ok = false;
+    try { await navigator.clipboard.writeText(i.value); ok = true; } catch(e){}
+    if (!ok) try { i.focus(); i.select(); ok = document.execCommand("copy"); } catch(e){}
+    toast(ok ? "Copied. Paste it into a message." : "Select the link and copy it.");
+  };
+  loadPhones();
+};
 
 function lockLandlord(){
   landlordPin = ""; landlordFilled = false;
@@ -1343,6 +1493,8 @@ function lockLandlord(){
   for (const id of ["ll-pin","ll-pin2","ll-newpin","ll-token"]) $(id).value = "";
   armTenant(false); armApNew(false);
   $("ll-ap-pass").textContent = "–";
+  llPhones = null; phoneArmed = phoneRenaming = "";
+  $("ll-phones").innerHTML = $("ll-links").innerHTML = ""; $("ll-share-out").hidden = true; $("ll-share-out").innerHTML = "";
   renderRemoteInfo();
 }
 
@@ -1380,15 +1532,15 @@ $("ll-features-save").onclick = async () => {
 function armTenant(armed){
   const b = $("ll-new-tenant");
   b.dataset.armed = armed ? "1" : "";
-  b.textContent = armed ? "Tap again: old phones stop working" : "New tenant";
+  b.textContent = armed ? "Tap again: every phone stops working" : "New tenant";
 }
 $("ll-new-tenant").onclick = async () => {
   const b = $("ll-new-tenant");
   if (!b.dataset.armed) return armTenant(true);
   armTenant(false);
   const r = await apiPost("/api/remote/new-tenant",{pin: landlordPin});
-  toast(r.ok ? "Done. There's a new QR code; phones set up before no longer work." : r.error);
-  loadRemoteInfo();
+  toast(r.ok ? "Done. There's a new QR code; every phone was removed." : r.error);
+  loadRemoteInfo(); loadPhones(); $("ll-share-out").hidden = true;
 };
 // The controller's own network (MyAir): its password, and a new one (two taps).
 async function apLandlordFill(){
@@ -1420,7 +1572,7 @@ $("ll-change-pin").onsubmit = async e => {
   toast("PIN changed.");
 };
 $("ll-lock").onclick = lockLandlord;
-setInterval(() => { if (!$("settings").hidden){ loadRemoteInfo(); loadRooms(); } }, 5000);
+setInterval(() => { if (!$("settings").hidden){ loadRemoteInfo(); loadRooms(); loadPhones(); } }, 5000);
 
 // The phone copy only offers what phones may do from outside.
 if (remote){
@@ -3244,6 +3396,10 @@ const demo = (() => {
   // Pretend landlord settings: any 4 to 8 digits unlocks, and changes last
   // until the page is reloaded. Phones can't connect, so there's no QR code.
   const ll = {enabled:false, pageUrl:"", server:"https://ntfy.sh", token:""};
+  const demoNow = Math.floor(Date.now() / 1000);
+  const demoPhones = {n: 0, links: [], phones: [
+    {id: "demoscot", name: "Scott", how: "old", added: demoNow - 3 * 86400, lastSeen: demoNow - 120},
+    {id: "demoten1", name: "Android phone, 4 Nov", how: "qr", added: demoNow - 2 * 86400, lastSeen: demoNow - 86400}]};
   const apPass = () => Array.from({length:10}, () => "abcdefghjkmnpqrstuvwxyz23456789"[Math.floor(Math.random()*31)]).join("");
   let apNow = apPass();
   const pinOk = pin => /^[0-9]{4,8}$/.test(pin || "");
@@ -3251,7 +3407,21 @@ const demo = (() => {
     if (!pinOk(path === "/api/remote/pin" ? p.current : p.pin)) return no("The PIN must be 4 to 8 digits.");
     if (path === "/api/remote/check") return {ok:true};
     if (path === "/api/remote/pin") return pinOk(p.pin) ? {ok:true} : no("The PIN must be 4 to 8 digits.");
-    if (path === "/api/remote/new-tenant"){ note("Landlord made a new phone QR code"); return {ok:true}; }
+    if (path === "/api/remote/new-tenant"){ demoPhones.phones = []; demoPhones.links = []; note("Landlord made a new phone QR code"); return {ok:true}; }
+    if (path === "/api/remote/link"){
+      const name = (p.name || "").trim().slice(0, 32);
+      if (!name) return no("Type who the link is for.");
+      const id = "demo" + (++demoPhones.n), expires = Math.floor(Date.now() / 1000) + 7 * 86400;
+      demoPhones.links.push({id, name, expires});
+      return {ok:true, id, name, expires, link: "https://example.github.io/myair/#t=practice&i=" + id + "&k=practice-only", qr: []};
+    }
+    if (path === "/api/remote/link/cancel"){ demoPhones.links = demoPhones.links.filter(l => l.id !== p.id); return {ok:true}; }
+    if (path === "/api/remote/phone/remove"){ demoPhones.phones = demoPhones.phones.filter(x => x.id !== p.id); note("Landlord removed a phone"); return {ok:true}; }
+    if (path === "/api/remote/phone/rename"){
+      const x = demoPhones.phones.find(q => q.id === p.id), name = (p.name || "").trim().slice(0, 32);
+      if (!x) return no("That phone has been removed."); if (!name) return no("Type a name.");
+      x.name = name; return {ok:true};
+    }
     if (path === "/api/ap/new"){ apNow = apPass(); note("Landlord made a new password for the MyAir network"); return {ok:true}; }
     if (path === "/api/remote/settings"){
       const page = p.page || "";
@@ -3281,6 +3451,7 @@ const demo = (() => {
       status: "Practice mode, so phones can't connect and there's no QR code", connected: false, sentToday: 0}),
     ntfyConfig: () => ({...ntCfg}),
     apInfo: () => ({name: "MyAir", pass: apNow}),
+    phones: () => JSON.parse(JSON.stringify({...demoPhones, n: undefined})),
     ntfyTest(){  // false if a test is already running
       if (ntTest.length) return false;
       const now = Date.now();
