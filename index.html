@@ -1055,13 +1055,22 @@ async function apiPost(path, params){
   return r.ok ? {ok:true} : {ok:false,error:j.error||"The controller didn't accept that."};
 }
 
+// The order the zones are shown in everywhere, by zone number. Only the order
+// changes: each zone keeps its number on the control box (1 Living Room,
+// 2 Kitchen, 3 Spare Bedroom, 4 Main Bedroom, 5 Office/Games, 6 Sunroom, 7 Bathroom).
+const ZONE_ORDER = [2, 1, 4, 5, 3, 6, 7];
+function inDisplayOrder(zones){
+  const rank = z => { const i = ZONE_ORDER.indexOf(z.n); return i < 0 ? ZONE_ORDER.length + z.n : i; };
+  return [...zones].sort((a, b) => rank(a) - rank(b));
+}
+
 async function refresh(){
   const n = ++askedN;
   let first = false;
   try {
     const s = await apiGet();
     failures = 0;
-    if (n > shownN && n > staleUpTo){ first = !state; shownN = n; state = s; syncClock(); }
+    if (n > shownN && n > staleUpTo){ first = !state; shownN = n; s.zones = inDisplayOrder(s.zones); state = s; syncClock(); }
   }
   catch(e){ failures++; }
   if (first && state && plans) renderPlans();
@@ -3064,7 +3073,7 @@ function tickClock(){
 const demo = (() => {
   // The real house, from the old tablet's screens.
   const OUT = 14;  // a cool morning outside
-  const names = ["Living Room","Kitchen","SpareBedroom","Main Bedroom","Office/Games","Sunroom","Bathroom"];
+  const names = ["Living Room","Kitchen","Spare Bedroom","Main Bedroom","Office/Games","Sunroom","Bathroom"];
   const sensor = [true,true,false,true,false,true,false], open0 = [true,true,false,true,false,false,true];
   const set0 = [22,21,null,21,null,21,null], start = [18.2,18.9,16.5,17.8,16.1,15.4,17.0];
   const s = {source:"simulated",connected:true,known:true,
