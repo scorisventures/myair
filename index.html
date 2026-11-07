@@ -244,6 +244,30 @@ header h1{font-size:20px;margin:0;font-weight:650;letter-spacing:.01em}
 .share-out .qr{width:min(160px,100%)}
 .room-row .acts{display:flex;gap:6px;flex:none}.room-row .acts .btn{padding:5px 10px;font-size:13px}
 .room-row.removing{border-color:var(--bad)}
+/* Settings → Sensor batteries: a card that folds away */
+details.set-card > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;margin:-14px;padding:14px;border-radius:14px}
+details.set-card > summary::-webkit-details-marker{display:none}
+details.set-card > summary h3{flex:1}
+details.set-card > summary::after{content:"";width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:0 4px 4px 0;transition:transform .15s}
+details.set-card[open] > summary::after{transform:rotate(-135deg);margin:4px 4px 0 0}
+details.set-card[open] > summary{margin-bottom:-4px}
+.bat-sum{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+details.set-card[open] .bat-sum{display:none}
+.bat-body{display:grid;gap:10px;min-width:0}
+.bat{display:flex;align-items:center;gap:10px;flex:none;font-variant-numeric:tabular-nums}
+.bat .pct{font-size:22px;font-weight:700;min-width:3.2ch;text-align:right}
+.bat .chg{font-size:13px;color:var(--muted);text-align:right;line-height:1.25}
+.bat-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.bat-chart{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:8px 6px 4px}
+.bat-chart svg{display:block;width:100%;height:auto}
+.bat-chart text{fill:var(--muted);font-size:11px}
+.bat-tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.bat-tbl table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+.bat-tbl th,.bat-tbl td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+.bat-tbl th:first-child,.bat-tbl td:first-child{text-align:left}
+.bat-tbl th{font-weight:600;color:var(--muted);font-size:13px}
+.bat-tbl tr:last-child td{border-bottom:0}
+.bat-tbl td.miss{color:var(--muted)}
 
 /* tasks page (calendar) — item colours c0-c8 */
 .c0{--c:var(--c0)}.c1{--c:var(--c1)}.c2{--c:var(--c2)}.c3{--c:var(--c3)}.c4{--c:var(--c4)}.c5{--c:var(--c5)}.c6{--c:var(--c6)}.c7{--c:var(--c7)}.c8{--c:var(--c8)}
@@ -757,6 +781,17 @@ body.phone[data-view="tasks"] header{display:none}
       <label class="field" id="rooms-pin-row" hidden><span class="field-label">Landlord PIN (to link or unlink)</span><input type="password" inputmode="numeric" id="rooms-pin" maxlength="8" autocomplete="off"></label>
       <div class="rooms" id="rooms-list"><p class="muted">Looking for sensors…</p></div>
     </section>
+    <details class="set-card" id="set-batteries">
+      <summary><h3>Sensor batteries</h3><span class="bat-sum" id="bat-sum"></span></summary>
+      <div class="bat-body">
+        <p class="muted">The controller writes down each sensor's battery every Monday at 9 am. A sensor's percentage can wobble a point or two with the room temperature, so watch the trend over a few weeks, not one reading.</p>
+        <div class="rooms" id="bat-rooms"></div>
+        <div class="bat-chart" id="bat-chart" hidden></div>
+        <div class="bat-tbl" id="bat-tbl" hidden></div>
+        <button class="btn" type="button" id="bat-all" hidden>Show all weeks</button>
+        <p class="muted">"Years left" appears once a sensor has 4 weeks of readings. "Not heard" means the controller hadn't picked that sensor up in the hour before it wrote the week down. Kept on the controller (room for about 10 years), so it carries on without a PC.</p>
+      </div>
+    </details>
     <section class="set-card" id="set-wifi">
       <h3>Home Wi-Fi</h3>
       <form id="wifi-form">
@@ -1328,7 +1363,7 @@ const acStep = d => nudge("temp","/api/ac",{},"temp", state.ac.setTemp, d*0.5, s
 $("temp-down").onclick = () => acStep(-1);
 $("temp-up").onclick = () => acStep(1);
 
-$("open-settings").onclick = () => { $("settings").hidden = false; loadRemoteInfo(); loadRooms(); };
+$("open-settings").onclick = () => { $("settings").hidden = false; loadRemoteInfo(); loadRooms(); loadBatteries(); };
 function closeSettings(){ $("settings").hidden = true; lockLandlord(); }
 $("close-settings").onclick = closeSettings;
 $("settings").onclick = e => { if (e.target === $("settings")) closeSettings(); };
@@ -1643,6 +1678,7 @@ function renderRooms(){
     return `<div class="room-row"><div><b>${esc(r.label)}</b><small>${esc(bits.join(" · "))}</small></div><select data-mac="${esc(r.mac)}" data-label="${esc(r.label)}" aria-label="Room for ${esc(r.label)}">${opts}</select></div>`;
   }).join("") : `<p class="muted">No sensors heard yet. Put a CR2032 in, give it the pvvx software, and keep it within a few rooms of the controller.</p>`;
   if (html !== renderRooms.shown && !$("rooms-list").contains(document.activeElement)){ $("rooms-list").innerHTML = html; renderRooms.shown = html; }
+  renderBatteries();
 }
 $("rooms-list").addEventListener("change", async e => {
   const sel = e.target.closest("select[data-mac]");
@@ -1655,6 +1691,100 @@ $("rooms-list").addEventListener("change", async e => {
   await loadRooms();
   refresh();
 });
+
+// ------------------------------------------------------------ sensor batteries (wall panel only)
+// Settings → Sensor batteries: the board writes down each linked sensor's
+// battery every Monday at 9 am (battery_log.h). Folded away until opened.
+
+let batLog = null, batAll = false;
+const BAT_COLOURS = ["var(--cool)", "var(--dry)", "var(--auto)", "var(--heat)", "var(--fan)", "var(--warn)", "var(--ok)"];
+async function loadBatteries(){
+  if (remote || $("settings").hidden) return;
+  try {
+    if (window.MYAIR_DEMO) batLog = demo.batteries();
+    else { const r = await fetch("/api/batteries",{cache:"no-store"}); if (!r.ok) return; const j = await r.json(); if (Array.isArray(j.weeks)) batLog = j; }
+  } catch(e){ return; }
+  renderBatteries();
+}
+$("set-batteries").addEventListener("toggle", () => { if ($("set-batteries").open) loadBatteries(); });
+$("bat-all").onclick = () => { batAll = !batAll; renderBatteries(); };
+function batDate(d, withYear){
+  const t = new Date(Math.floor(d/10000), Math.floor(d/100)%100 - 1, d%100);
+  return t.toLocaleDateString("en-AU", {day:"numeric", month:"short", ...(withYear ? {year:"numeric"} : {})});
+}
+function batDays(d){ return Date.UTC(Math.floor(d/10000), Math.floor(d/100)%100 - 1, d%100) / 86400000; }
+// Straight-line fit over a sensor's weekly readings: % per day (negative = draining).
+function batSlope(pts){
+  const n = pts.length, mx = pts.reduce((a, p) => a + p.x, 0)/n, my = pts.reduce((a, p) => a + p.y, 0)/n;
+  const sxx = pts.reduce((a, p) => a + (p.x - mx)**2, 0);
+  return sxx ? pts.reduce((a, p) => a + (p.x - mx)*(p.y - my), 0) / sxx : 0;
+}
+function renderBatteries(){
+  const live = roomsInfo && state ? roomsInfo.sensors.filter(r => r.zone > 0) : [];
+  const weeks = batLog ? batLog.weeks : [];
+  // One column per linked sensor, in the zones' display order.
+  const rank = n => { const i = ZONE_ORDER.indexOf(n); return i < 0 ? 99 + n : i; };
+  const sensors = live.sort((a, b) => rank(a.zone) - rank(b.zone)).map((r, i) => {
+    const pts = weeks.flatMap(w => w.s.filter(x => x[0] === r.mac && x[2] >= 0).map(x => ({d: w.d, x: batDays(w.d), y: x[2]})));
+    const now = r.battery >= 0 ? r.battery : pts.length ? pts[pts.length-1].y : -1;
+    const z = zoneOf(r.zone);
+    return {mac: r.mac, label: r.label, room: z ? z.name : "Zone " + r.zone, colour: BAT_COLOURS[i % BAT_COLOURS.length], pts, now};
+  });
+  const known = sensors.filter(s => s.now >= 0);
+  $("bat-sum").textContent = known.length ? "lowest " + Math.min(...known.map(s => s.now)) + "%" : "";
+  if (!$("set-batteries").open) return;
+  const thisYear = new Date().getFullYear(), withYear = weeks.some(w => Math.floor(w.d/10000) !== thisYear);
+  const html = sensors.length ? sensors.map(s => {
+    let chg = "";
+    if (s.pts.length && s.now >= 0){
+      const diff = s.now - s.pts[0].y;
+      chg = (diff > 0 ? "+" + diff : diff < 0 ? "−" + (-diff) : "no change") + " since " + batDate(s.pts[0].d, withYear);
+      if (s.pts.length >= 4){
+        const perYear = -batSlope(s.pts) * 365;
+        const yrs = perYear > 0.5 ? s.now / perYear : null;
+        chg += "<br>" + (yrs == null ? "hardly dropping yet" : yrs >= 1.5 ? `about ${Math.round(yrs)} years left` : `about ${Math.max(1, Math.round(yrs*12))} months left`);
+      }
+    }
+    const first = s.pts.length ? "first reading " + batDate(s.pts[0].d, withYear) : "no Monday reading yet";
+    return `<div class="room-row"><div><b><span class="bat-dot" style="background:${s.colour}"></span>${esc(s.room)}</b><small>${esc(s.label)} · ${first}</small></div>` +
+      `<div class="bat">${chg ? `<span class="chg">${chg}</span>` : ""}<span class="pct">${s.now >= 0 ? s.now + "%" : "–"}</span></div></div>`;
+  }).join("") : `<p class="muted">No sensors linked. Link one under Room sensors first.</p>`;
+  if (html !== renderBatteries.shown){ $("bat-rooms").innerHTML = html; renderBatteries.shown = html; }
+  // Chart: one line per sensor, dates to scale.
+  const all = sensors.flatMap(s => s.pts);
+  $("bat-chart").hidden = weeks.length < 2 || !all.length;
+  if (!$("bat-chart").hidden){
+    const W = 560, H = 170, L = 44, R = 548, T = 10, B = 140;
+    const x0 = Math.min(...all.map(p => p.x)), x1 = Math.max(...all.map(p => p.x));
+    const lo = Math.max(0, Math.floor((Math.min(...all.map(p => p.y)) - 5)/10)*10), hi = Math.min(100, Math.ceil((Math.max(...all.map(p => p.y)) + 5)/10)*10);
+    const X = x => L + 12 + (x - x0) / ((x1 - x0) || 1) * (R - L - 24), Y = y => B - (y - lo) / ((hi - lo) || 10) * (B - T);
+    let g = "";
+    for (let v = lo; v <= hi; v += 10) g += `<line x1="${L}" y1="${Y(v)}" x2="${R}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end">${v}%</text>`;
+    const ds = [...new Set(all.map(p => p.d))].sort((a, b) => a - b), step = Math.ceil(ds.length / 6);
+    ds.forEach((d, i) => { if (i % step === 0) g += `<text x="${X(batDays(d))}" y="${H-10}" text-anchor="middle">${batDate(d, withYear)}</text>`; });
+    for (const s of sensors){
+      if (!s.pts.length) continue;
+      const last = s.pts[s.pts.length-1];
+      if (s.pts.length > 1) g += `<polyline fill="none" stroke="${s.colour}" stroke-width="2.5" stroke-linejoin="round" points="${s.pts.map(p => X(p.x).toFixed(1) + "," + Y(p.y).toFixed(1)).join(" ")}"/>`;
+      g += `<circle cx="${X(last.x).toFixed(1)}" cy="${Y(last.y).toFixed(1)}" r="4" fill="${s.colour}"/>`;
+    }
+    const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Battery percentage each week">${g}</svg>`;
+    if (svg !== renderBatteries.chart){ $("bat-chart").innerHTML = svg; renderBatteries.chart = svg; }
+  }
+  // Table: newest week first, 8 weeks unless "Show all weeks".
+  $("bat-tbl").hidden = !weeks.length || !sensors.length;
+  const rows = [...weeks].reverse(), shown = batAll ? rows : rows.slice(0, 8);
+  $("bat-all").hidden = rows.length <= 8;
+  $("bat-all").textContent = batAll ? "Show fewer weeks" : "Show all weeks";
+  if (!$("bat-tbl").hidden){
+    const t = `<table><thead><tr><th>Monday 9 am</th>${sensors.map(s => `<th>${esc(s.room)}</th>`).join("")}</tr></thead><tbody>${
+      shown.map(w => `<tr><td>${batDate(w.d, withYear)}</td>${sensors.map(s => {
+        const x = w.s.find(q => q[0] === s.mac);
+        return !x ? `<td class="miss">–</td>` : x[2] < 0 ? `<td class="miss">not heard</td>` : `<td>${x[2]}%</td>`;
+      }).join("")}</tr>`).join("")}</tbody></table>`;
+    if (t !== renderBatteries.table){ $("bat-tbl").innerHTML = t; renderBatteries.table = t; }
+  }
+}
 
 // ------------------------------------------------------------ scenes and events
 
@@ -3492,6 +3622,16 @@ const demo = (() => {
     },
     ntfyTestNext: () => ntTest.length ? {label: ntTest[0].cam.label, at: ntTest[0].at} : null,
     ntfy,
+    // Example Monday readings for the linked practice sensors (last 6 Mondays, slowly dropping).
+    batteries: () => {
+      const weeks = [], t = new Date(); t.setHours(0,0,0,0); t.setDate(t.getDate() - ((t.getDay() + 6) % 7));
+      for (let i = 5; i >= 0; i--){
+        const m = new Date(t); m.setDate(t.getDate() - 7*i);
+        weeks.push({d: m.getFullYear()*10000 + (m.getMonth()+1)*100 + m.getDate(),
+          s: rooms.filter(r => r.zone).map(r => [r.mac, r.zone, i === 2 && r.zone === 5 ? -1 : r.battery + Math.round(i * (r.zone === 5 ? 1 : 0.5))])});
+      }
+      return {weeks};
+    },
     rooms: () => ({pinSet: false, sensors: [...rooms].sort((a, b) => (!a.zone - !b.zone) || (a.zone - b.zone) || (b.rssi - a.rssi)).map(r => ({
       mac: r.mac, label: r.label, zone: r.zone, temp: Math.round(zoneN(r.at).temp*10)/10, humidity: 50 + r.at, battery: r.battery,
       rssi: r.rssi, ageS: 3, practice: true}))}),
